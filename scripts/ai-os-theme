@@ -35,6 +35,24 @@ render hyprlock.conf "$GEN/hyprlock.conf"
 render hypr.lua      "$GEN/hypr.lua"
 render swayosd.css   "$GEN/swayosd.css"
 render ghostty       "$GEN/ghostty"
+render tmux          "$GEN/tmux.conf"
+# nvim: catppuccin opts (flavour + palette overrides), loaded by init.lua.
+if [ "${c[mode]}" = light ]; then c[flavour]=latte; else c[flavour]=mocha; fi
+render nvim.lua      "$GEN/nvim.lua"
+# lazygit / lazydocker: only touch config dirs we own (no user config there before).
+for app in lazygit lazydocker; do
+  mkdir -p "$HOME/.config/$app"
+  render "$app.yml" "$HOME/.config/$app/config.yml"
+done
+# btop: theme file + point btop.conf at it.
+mkdir -p "$HOME/.config/btop/themes"
+render btop.theme    "$HOME/.config/btop/themes/ai-os.theme"
+if [ -f "$HOME/.config/btop/btop.conf" ]; then
+  sed -i 's|^color_theme *=.*|color_theme = "ai-os"|' "$HOME/.config/btop/btop.conf"
+  grep -q '^color_theme' "$HOME/.config/btop/btop.conf" || echo 'color_theme = "ai-os"' >> "$HOME/.config/btop/btop.conf"
+else
+  echo 'color_theme = "ai-os"' > "$HOME/.config/btop/btop.conf"
+fi
 echo "$theme" > "$GEN/current"
 
 # Wallpaper: soft radial gradient from the palette.
@@ -57,6 +75,8 @@ pkill -SIGUSR2 waybar 2>/dev/null
 pkill swayosd-server 2>/dev/null; setsid -f swayosd-server >/dev/null 2>&1
 pkill hyprpaper 2>/dev/null; setsid -f hyprpaper >/dev/null 2>&1
 pkill -SIGUSR2 ghostty 2>/dev/null
+pkill -USR2 btop 2>/dev/null
+tmux source-file ~/.config/tmux/tmux.conf 2>/dev/null
 # GTK + Qt/KDE apps (Dolphin). Qt colour scheme is shared with the Plasma session.
 if [ "${c[mode]}" = light ]; then scheme=default; else scheme=prefer-dark; fi
 gsettings set org.gnome.desktop.interface color-scheme "$scheme" 2>/dev/null
