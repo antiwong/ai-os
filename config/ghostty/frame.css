@@ -1,0 +1,40 @@
+/* Catppuccin Mocha frame styling for Ghostty (GTK/libadwaita) */
+
+/* Tab bar: darker strip behind the tabs */
+tabbar tabbox,
+tabbar .box {
+  background-color: #11111b;
+}
+
+/* Individual tabs: rounded pills */
+tabbar tab {
+  margin: 4px 3px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background-color: #181825;
+  color: #7f849c;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+tabbar tab:hover {
+  background-color: #313244;
+  color: #cdd6f4;
+}
+
+/* Selected tab: mauve accent so it is obvious which one is active */
+tabbar tab:selected {
+  background-color: #313244;
+  color: #cba6f7;
+  box-shadow: inset 0 -2px #cba6f7;
+}
+
+/* Close button on tabs */
+tabbar tab button {
+  border-radius: 8px;
+}
+
+/* Split dividers a bit thicker for distinct panes */
+paned > separator {
+  min-width: 3px;
+  min-height: 3px;
+}

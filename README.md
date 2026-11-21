@@ -11,5 +11,14 @@ Task tracking lives in beads (`bd ready`, `bd list`). Design notes are in `docs/
 3. `scripts/01-install-hyprland.sh`      - Hyprland stack (official repos)
 4. `scripts/03-verify.sh`                - read-only check
 5. `scripts/02-install-aur-extras.sh`    - optional Walker + elephant (AUR)
+6. `scripts/05-link-dotfiles.sh`         - symlink tracked configs and scripts into ~/.config and ~/.local/bin
+   (idempotent; `--dry-run` to preview; existing files are kept as `.bak.<timestamp>`)
 
 Log out and pick the Hyprland session at the login screen. Plasma remains as fallback.
+
+## Dotfiles
+This repo is the dotfiles repo: `config/` and `scripts/` are symlinked into `$HOME` by
+`scripts/05-link-dotfiles.sh` (add new files to its `LINKS` list). Edit files here, not in
+`~/.config`. Generated files (`~/.config/ai-os/theme/`, btop/lazygit/lazydocker config, wallpapers)
+are rebuilt by `ai-os-theme <theme>` and are not tracked. Some tools replace symlinks when they write
+(e.g. nvim's `lazy-lock.json`); re-run the link script to restore them.
