@@ -48,6 +48,8 @@ hl.bind("Print",               hl.dsp.exec_cmd("ai-os-shot region"))
 hl.bind("SHIFT + Print",       hl.dsp.exec_cmd("ai-os-shot region annotate"))
 hl.bind(mod .. " + Print",     hl.dsp.exec_cmd("ai-os-shot output"))
 hl.bind(mod .. " + SHIFT + Print", hl.dsp.exec_cmd("ai-os-shot window"))
+-- Screenshot a region and hand it to the Claude scratchpad
+hl.bind(mod .. " + SHIFT + A", hl.dsp.exec_cmd("ai-os-shot-agent"))
 -- Clipboard history picker (cliphist)
 hl.bind(mod .. " + CTRL + V",  hl.dsp.exec_cmd("sh -c 'cliphist list | fuzzel --dmenu | cliphist decode | wl-copy'"))
 

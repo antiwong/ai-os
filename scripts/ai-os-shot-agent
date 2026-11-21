@@ -1,0 +1,25 @@
+#!/bin/sh
+# Screenshot -> Claude Code. Captures a region (or "output"/"window"), saves a PNG,
+# opens the Claude scratchpad and types "@<path> " into it so you can add a prompt.
+# Usage: ai-os-shot-agent [region|output|window]
+mode="${1:-region}"
+dir="$HOME/Pictures/Screenshots/agent"; mkdir -p "$dir"
+file="$dir/agent_$(date +%Y%m%d_%H%M%S).png"
+if [ "$mode" = region ]; then sel="-m region"; else sel="-m active -m $mode"; fi
+hyprshot $sel --raw --silent > "$file" 2>/dev/null
+[ -s "$file" ] || { rm -f "$file"; exit 0; }   # selection cancelled
+printf '%s' "$file" | wl-copy
+
+shown() { hyprctl monitors -j | jq -e '.[]|select(.specialWorkspace.name=="special:claude")' >/dev/null; }
+exists() { hyprctl clients -j | jq -e '.[]|select(.class=="ai-os.claude")' >/dev/null; }
+if ! exists; then
+  ai-os-claude                                  # launches and shows it
+  for _ in $(seq 40); do exists && break; sleep 0.5; done
+  sleep 4                                       # let claude start accepting input
+elif ! shown; then
+  ai-os-claude                                  # toggles it into view
+  sleep 0.4
+fi
+hyprctl dispatch focuswindow 'class:^ai-os[.]claude$' >/dev/null
+wtype "@$file "
+notify-send "Screenshot sent to Claude" "$file" 2>/dev/null
