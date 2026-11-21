@@ -1,0 +1,19 @@
+window#osd {
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: 2px solid #@@accent@@;
+  background: alpha(#@@base@@, 0.93);
+}
+window#osd #container { margin: 8px; }
+window#osd image, window#osd label { color: #@@text@@; }
+window#osd progressbar:disabled, window#osd image:disabled { opacity: 0.5; }
+window#osd progressbar trough {
+  min-height: 6px;
+  border-radius: 999px;
+  background: #@@surface0@@;
+}
+window#osd progressbar progress {
+  min-height: 6px;
+  border-radius: 999px;
+  background: #@@accent@@;
+}

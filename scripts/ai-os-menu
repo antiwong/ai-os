@@ -1,0 +1,20 @@
+#!/bin/sh
+# Omarchy-style system menu on fuzzel. Bound to SUPER+ESCAPE.
+pick() { printf '%s\n' "$@" | fuzzel --dmenu --prompt "  "; }
+
+case "$(pick "Theme" "Screenshot" "Update" "Lock" "Logout" "Suspend" "Reboot" "Shutdown")" in
+  Theme)    exec ai-os-theme ;;
+  Screenshot)
+    case "$(pick "Region" "Region + annotate" "Output" "Window")" in
+      Region)              exec ai-os-shot region ;;
+      "Region + annotate") exec ai-os-shot region annotate ;;
+      Output)              exec ai-os-shot output ;;
+      Window)              exec ai-os-shot window ;;
+    esac ;;
+  Update)   exec ghostty -e sh -c 'paru -Syu; printf "\nDone. Press Enter."; read _' ;;
+  Lock)     exec hyprlock ;;
+  Logout)   exec sh -c 'uwsm stop || hyprctl dispatch exit' ;;
+  Suspend)  exec systemctl suspend ;;
+  Reboot)   [ "$(pick "No" "Yes, reboot")" = "Yes, reboot" ] && exec systemctl reboot ;;
+  Shutdown) [ "$(pick "No" "Yes, shut down")" = "Yes, shut down" ] && exec systemctl poweroff ;;
+esac

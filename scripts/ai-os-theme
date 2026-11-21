@@ -1,0 +1,67 @@
+#!/bin/bash
+# ai-os theme switcher. Renders config/themes/templates with a palette into
+# ~/.config/ai-os/theme/, generates a wallpaper, and reloads the apps.
+# Usage: ai-os-theme [list | current | <theme>]   (no args: pick with fuzzel)
+set -u
+ROOT="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+THEMES="$ROOT/config/themes"
+GEN="$HOME/.config/ai-os/theme"
+WALL="$HOME/.local/share/ai-os/wallpapers"
+mkdir -p "$GEN" "$WALL"
+
+list() { for d in "$THEMES"/*/; do basename "$d"; done | grep -v '^templates$'; }
+
+case "${1:-}" in
+  list) list; exit ;;
+  current) cat "$GEN/current" 2>/dev/null || echo "(none)"; exit ;;
+  "") theme="$(list | fuzzel --dmenu --prompt "  ")"; [ -n "$theme" ] || exit 0 ;;
+  *) theme="$1" ;;
+esac
+[ -f "$THEMES/$theme/colors.env" ] || { echo "unknown theme: $theme" >&2; list >&2; exit 1; }
+
+# Parse key=value (values may contain spaces), no sourcing.
+declare -A c
+while IFS='=' read -r k v; do [ -n "$k" ] && c[$k]="$v"; done < "$THEMES/$theme/colors.env"
+
+render() { # template -> output
+  local sedargs=() k
+  for k in "${!c[@]}"; do sedargs+=(-e "s|@@$k@@|${c[$k]}|g"); done
+  sed "${sedargs[@]}" "$THEMES/templates/$1" > "$2"
+}
+render waybar.css    "$GEN/waybar.css"
+render mako          "$GEN/mako"
+render fuzzel.ini    "$GEN/fuzzel.ini"
+render hyprlock.conf "$GEN/hyprlock.conf"
+render hypr.lua      "$GEN/hypr.lua"
+render swayosd.css   "$GEN/swayosd.css"
+render ghostty       "$GEN/ghostty"
+echo "$theme" > "$GEN/current"
+
+# Wallpaper: soft radial gradient from the palette.
+img="$WALL/$theme.png"
+[ -f "$img" ] || magick -size 2560x1600 "radial-gradient:#${c[surface0]}-#${c[crust]}" \
+  -fill "#${c[accent]}" -draw "circle 1280,800 1280,806" -blur 0x0 "$img" 2>/dev/null \
+  || magick -size 2560x1600 "radial-gradient:#${c[surface0]}-#${c[crust]}" "$img"
+cat > "$HOME/.config/hypr/hyprpaper.conf" <<CONF
+splash = false
+wallpaper {
+    monitor =
+    path = $img
+    fit_mode = cover
+}
+CONF
+
+# Reload (each step tolerant: apps may not be running).
+makoctl reload 2>/dev/null
+pkill -SIGUSR2 waybar 2>/dev/null
+pkill swayosd-server 2>/dev/null; setsid -f swayosd-server >/dev/null 2>&1
+pkill hyprpaper 2>/dev/null; setsid -f hyprpaper >/dev/null 2>&1
+pkill -SIGUSR2 ghostty 2>/dev/null
+# GTK + Qt/KDE apps (Dolphin). Qt colour scheme is shared with the Plasma session.
+if [ "${c[mode]}" = light ]; then scheme=default; else scheme=prefer-dark; fi
+gsettings set org.gnome.desktop.interface color-scheme "$scheme" 2>/dev/null
+gsettings set org.gnome.desktop.interface gtk-theme "${c[gtk]}" 2>/dev/null
+plasma-apply-colorscheme "${c[qt]}" >/dev/null 2>&1
+hyprctl reload >/dev/null 2>&1
+notify-send "Theme" "${c[name]}" 2>/dev/null
+echo "applied: $theme"

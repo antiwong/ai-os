@@ -1,0 +1,9 @@
+theme = @@ghostty@@
+background = #@@base@@
+foreground = #@@text@@
+selection-background = #@@surface1@@
+selection-foreground = #@@text@@
+split-divider-color = #@@accent@@
+unfocused-split-fill = #@@crust@@
+window-titlebar-background = #@@crust@@
+window-titlebar-foreground = #@@text@@

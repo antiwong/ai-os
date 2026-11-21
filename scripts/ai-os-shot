@@ -1,0 +1,12 @@
+#!/bin/sh
+# Usage: ai-os-shot <region|output|window> [annotate]
+# Default: copy to clipboard only. "annotate": open in satty; Enter copies, Ctrl+S saves.
+mode="${1:-region}"
+if [ "${2:-}" = "annotate" ]; then
+  dir="$HOME/Pictures/Screenshots"; mkdir -p "$dir"
+  hyprshot -m "$mode" --raw --silent | satty --filename - \
+    --output-filename "$dir/Screenshot_%Y%m%d_%H%M%S.png" \
+    --copy-command wl-copy --early-exit --actions-on-enter save-to-clipboard
+else
+  exec hyprshot -m "$mode" --clipboard-only
+fi

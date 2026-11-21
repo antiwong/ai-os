@@ -1,0 +1,9 @@
+background-color=#@@base@@ee
+text-color=#@@text@@
+border-color=#@@accent@@
+
+[urgency=low]
+border-color=#@@surface1@@
+
+[urgency=critical]
+border-color=#@@red@@
