@@ -11,7 +11,7 @@ case "$(pick "Theme" "Screenshot" "Update" "Lock" "Logout" "Suspend" "Reboot" "S
       Output)              exec ai-os-shot output ;;
       Window)              exec ai-os-shot window ;;
     esac ;;
-  Update)   exec ghostty -e sh -c 'paru -Syu; printf "\nDone. Press Enter."; read _' ;;
+  Update)   exec ghostty -e sh -c 'ai-os-update; printf "\nPress Enter to close."; read _' ;;
   Lock)     exec hyprlock ;;
   Logout)   exec sh -c 'uwsm stop || hyprctl dispatch exit' ;;
   Suspend)  exec systemctl suspend ;;
