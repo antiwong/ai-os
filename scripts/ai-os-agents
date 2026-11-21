@@ -1,0 +1,33 @@
+#!/bin/sh
+# Agent pane layouts for tmux.
+#   ai-os-agents [N]        new/attached session for $PWD: main pane + N agent panes (default 2)
+#   ai-os-agents here [N]   same layout in a new window of the current session
+# Agent panes are titled agent-1..N; start your agents in them (claude, codex, ...).
+set -eu
+here=0; [ "${1:-}" = here ] && { here=1; shift; }
+n="${1:-2}"
+dir="$PWD"; [ -n "${TMUX_PANE:-}" ] && dir="$(tmux display -p -t "$TMUX_PANE" '#{pane_current_path}')"
+
+build() { # $1 = window target
+  tmux select-pane -t "$1" -T main
+  i=1
+  while [ "$i" -le "$n" ]; do
+    tmux split-window -t "$1" -h -c "$dir"
+    tmux select-pane -T "agent-$i"
+    i=$((i + 1))
+  done
+  tmux select-layout -t "$1" main-vertical
+  tmux select-pane -t "$1.1"
+}
+
+if [ "$here" = 1 ]; then
+  w="$(tmux new-window -P -c "$dir" -n agents -F '#{window_id}')"
+  build "$w"
+else
+  name="agents-$(basename "$dir" | tr -c 'A-Za-z0-9\n' '_')"
+  if ! tmux has-session -t "$name" 2>/dev/null; then
+    tmux new-session -d -s "$name" -c "$dir" -n agents
+    build "$name:agents"
+  fi
+  if [ -n "${TMUX:-}" ]; then tmux switch-client -t "$name"; else exec tmux attach -t "$name"; fi
+fi

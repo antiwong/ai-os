@@ -1,0 +1,63 @@
+#!/bin/sh
+# One git worktree + one tmux window per agent.
+#   ai-os-agent <branch> [command...]   create worktree (and branch), open a tmux window, run command (default: claude)
+#   ai-os-agent --rm <branch> [--force] kill the window and remove the worktree (branch is kept)
+#   ai-os-agent --list                  show worktrees
+# Worktrees live in <repo>.worktrees/<branch with / replaced by ->.
+set -eu
+
+top="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "not in a git repo" >&2; exit 1; }
+# Always resolve to the main worktree so nesting never happens.
+common="$(git rev-parse --path-format=absolute --git-common-dir)"
+repo="$(cd "$common/.." && pwd)"
+base="$repo.worktrees"
+sess="agents-$(basename "$repo" | tr -c 'A-Za-z0-9\n' '_')"
+wtpath() { printf '%s/%s' "$base" "$(printf '%s' "$1" | tr '/' '-')"; }
+winname() { printf '%s' "$1" | tr '/.:' '---'; }
+
+case "${1:-}" in
+  --list) exec git -C "$repo" worktree list ;;
+  --rm)
+    br="${2:?branch required}"; path="$(wtpath "$br")"
+    # Remove the worktree first: git refuses if it is dirty, and then the window stays.
+    if [ "${3:-}" = "--force" ]; then git -C "$repo" worktree remove --force "$path"
+    else git -C "$repo" worktree remove "$path"; fi
+    # Kill the window in the current session and in the repo's agent session.
+    for t in "$(tmux display -p '#S' 2>/dev/null || true)" "$sess"; do
+      [ -n "$t" ] && tmux kill-window -t "$t:$(winname "$br")" 2>/dev/null || true
+    done
+    echo "removed $path (branch $br kept)"; exit ;;
+  ""|-h|--help) sed -n '2,6p' "$0"; exit 1 ;;
+esac
+
+br="$1"; shift
+[ $# -gt 0 ] || set -- claude
+path="$(wtpath "$br")"
+
+if [ ! -d "$path" ]; then
+  mkdir -p "$base"
+  if git -C "$repo" show-ref --verify --quiet "refs/heads/$br"; then
+    git -C "$repo" worktree add "$path" "$br"
+  elif git -C "$repo" show-ref --verify --quiet "refs/remotes/origin/$br"; then
+    git -C "$repo" worktree add --track -b "$br" "$path" "origin/$br"
+  else
+    git -C "$repo" worktree add -b "$br" "$path"
+  fi
+fi
+
+win="$(winname "$br")"
+# Run argv as-is (no re-quoting), then drop into a shell when the agent exits.
+run() { printf '%s\n' '"$@"; exec "${SHELL:-sh}"'; }
+if [ -n "${TMUX:-}" ]; then
+  # Stay in the current session unless it isn't the repo's agent session; just add a window.
+  if tmux list-windows -F '#W' | grep -qx "$win"; then tmux select-window -t "$win"
+  else tmux new-window -n "$win" -c "$path" sh -c "$(run)" _ "$@"; fi
+else
+  if ! tmux has-session -t "$sess" 2>/dev/null; then
+    tmux new-session -d -s "$sess" -n "$win" -c "$path" sh -c "$(run)" _ "$@"
+  elif ! tmux list-windows -t "$sess" -F '#W' | grep -qx "$win"; then
+    tmux new-window -t "$sess:" -n "$win" -c "$path" sh -c "$(run)" _ "$@"
+  fi
+  tmux select-window -t "$sess:$win"
+  exec tmux attach -t "$sess"
+fi
