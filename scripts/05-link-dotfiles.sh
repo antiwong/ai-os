@@ -19,6 +19,7 @@ LINKS=(
   "config/flags/electron.conf|$C/chrome-flags.conf"
   "config/bbl/pretty.awk|$C/bbl/pretty.awk"
   "config/flags/electron.conf|$C/code-flags.conf"
+  "config/systemd/user/ollama.service|$C/systemd/user/ollama.service"
   "config/ghostty/config.ghostty|$C/ghostty/config.ghostty"
   "config/ghostty/frame.css|$C/ghostty/frame.css"
   "config/nvim/init.lua|$C/nvim/init.lua"
