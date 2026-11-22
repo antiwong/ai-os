@@ -1,0 +1,29 @@
+#!/bin/bash
+# Generate a soft "aurora" wallpaper from a theme palette (ImageMagick).
+# Usage: ai-os-wallpaper <out.jpg> <dark|light> <base> <mantle> <crust> <accent> <accent2> <red> <peach>   (hex, no #)
+set -eu
+out="$1"; mode="$2"; base="$3"; mantle="$4"; crust="$5"; accent="$6"; accent2="$7"; red="$8"; peach="$9"
+# Render at half size (soft gradients), then scale up: ~4x faster.
+D=2; W=1280; H=800
+if [ "$mode" = light ]; then args=(-size ${W}x${H} "gradient:#${base}-#${mantle}"); else args=(-size ${W}x${H} "gradient:#${base}-#${crust}"); fi
+# glow <color> <x> <y> <radius> <blur> <opacity>: a soft coloured blob (colour with a blurred-circle alpha mask)
+glow() {
+  args+=( '(' -size ${W}x${H} "xc:#$1"
+          '(' -size ${W}x${H} xc:black -fill white
+              -draw "circle $(( $2 / D )),$(( $3 / D )) $(( $2 / D )),$(( $3 / D + $4 / D ))"
+              -blur 0x$(( $5 / D )) -evaluate multiply $6 ')'
+          -alpha off -compose copy_opacity -composite ')' -compose over -composite )
+}
+if [ "$mode" = light ]; then
+  glow "$accent2" 700 420 450 220 0.55
+  glow "$accent"  1950 1180 520 240 0.45
+  glow "$peach"   330 1380 320 200 0.40
+  glow "$red"     1800 280 300 200 0.22
+else
+  glow "$accent"  700 420 420 200 0.55
+  glow "$accent2" 1950 1180 500 220 0.42
+  glow "$red"     1800 280 300 200 0.26
+  glow "$peach"   330 1380 300 180 0.16
+  args+=( '(' -size ${W}x${H} radial-gradient:none-black -evaluate multiply 0.35 ')' -compose over -composite )
+fi
+magick "${args[@]}" -resize 2560x1600 -attenuate 0.06 +noise Gaussian -quality 93 "$out"

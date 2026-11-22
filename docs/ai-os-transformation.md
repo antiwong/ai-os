@@ -75,6 +75,11 @@ docs/     plan.md (decisions), updates.md (update + rollback), this file
 - **Dictation** (`SUPER+D`): `ai-os-dictate` (whisper.cpp `base.en`) exists but voice is **deferred** by the user; pipeline verified on silence only.
 
 ### Look
+- **Terminal**: Ghostty uses JetBrainsMono Nerd Font Mono, a non-blinking cursor and 95% opacity. Each pane gets a very faint tint that is a small mix of the active theme's base and accent colours (it used to be eight hardcoded hues, including browns, that ignored the theme).
+- **Prompt**: custom two-line fish prompt (`config/fish/functions/fish_prompt.fish`): path, git branch with ahead/behind and staged/changed/untracked counts, python venv, slow-command duration, failure status, and a `❯` that turns red after an error. Syntax highlighting and autosuggestion colours also follow the theme.
+- **Wallpaper**: a soft "aurora" generated per theme by `ai-os-wallpaper` (ImageMagick, about 12 s once per theme, cached as a ~290 KB JPEG).
+- Switching a theme updates all of this live: fish colours are universal variables, so open shells repaint at the next prompt. Shells started before a change keep their old pane tint.
+
 macOS-style rounding (12), large soft shadows, frosted blur behind the bar/launcher/notifications, translucent terminal (92%), spring animations, Inter-first font stack (Inter itself is not installed; install `inter-font`).
 
 ### Safety

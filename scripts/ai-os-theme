@@ -23,6 +23,12 @@ esac
 declare -A c
 while IFS='=' read -r k v; do [ -n "$k" ] && c[$k]="$v"; done < "$THEMES/$theme/colors.env"
 
+mixhex() { # mixhex <from> <to> <percent-of-to>
+  local i out="" x y; for i in 0 2 4; do
+    x=$((16#${1:$i:2})); y=$((16#${2:$i:2})); out+=$(printf '%02x' $(( (x*(100-$3) + y*$3 + 50) / 100 )))
+  done; printf '%s' "$out"; }
+c[dim]="$(mixhex "${c[base]}" "${c[text]}" 45)"
+
 render() { # template -> output
   local sedargs=() k
   for k in "${!c[@]}"; do sedargs+=(-e "s|@@$k@@|${c[$k]}|g"); done
@@ -36,6 +42,8 @@ render hypr.lua      "$GEN/hypr.lua"
 render swayosd.css   "$GEN/swayosd.css"
 render ghostty       "$GEN/ghostty"
 render tmux          "$GEN/tmux.conf"
+render fish.fish     "$GEN/fish.fish"
+fish -c "source $GEN/fish.fish" 2>/dev/null   # live-update fish prompt/syntax colours (universal vars)
 # nvim: catppuccin opts (flavour + palette overrides), loaded by init.lua.
 if [ "${c[mode]}" = light ]; then c[flavour]=latte; else c[flavour]=mocha; fi
 render nvim.lua      "$GEN/nvim.lua"
@@ -55,11 +63,10 @@ else
 fi
 echo "$theme" > "$GEN/current"
 
-# Wallpaper: soft radial gradient from the palette.
-img="$WALL/$theme.png"
-[ -f "$img" ] || magick -size 2560x1600 "radial-gradient:#${c[surface0]}-#${c[crust]}" \
-  -fill "#${c[accent]}" -draw "circle 1280,800 1280,806" -blur 0x0 "$img" 2>/dev/null \
-  || magick -size 2560x1600 "radial-gradient:#${c[surface0]}-#${c[crust]}" "$img"
+# Wallpaper: soft aurora generated from the palette (cached per theme; delete the file to regenerate).
+img="$WALL/$theme.jpg"
+[ -f "$img" ] || "$ROOT/scripts/ai-os-wallpaper" "$img" "${c[mode]}" "${c[base]}" "${c[mantle]}" "${c[crust]}" \
+  "${c[accent]}" "${c[accent2]}" "${c[red]}" "${c[peach]}" || echo "wallpaper generation failed" >&2
 cat > "$HOME/.config/hypr/hyprpaper.conf" <<CONF
 splash = false
 wallpaper {
