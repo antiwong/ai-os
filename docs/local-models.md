@@ -1,3 +1,5 @@
+> **Parked (2026-11-22):** no local models for now. The Ollama user service is installed but **disabled**; models will come from a proxy to the user's remote servers (details to follow). Re-enable with `systemctl --user enable --now ollama`. `qwen2.5-coder:3b` (2.2 GB in `~/.ollama`) is still on disk; remove with `ollama rm qwen2.5-coder:3b`.
+
 # Local models (Ollama on the Radeon 780M)
 
 Ollama runs as a **user** service (`config/systemd/user/ollama.service`, linked by `05-link-dotfiles.sh`):

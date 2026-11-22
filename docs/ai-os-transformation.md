@@ -70,8 +70,8 @@ docs/     plan.md (decisions), updates.md (update + rollback), this file
 - **Shared MCP servers** (`config/mcp/servers.json`, applied with `ai-os-mcp claude`): filesystem (scoped to `~/code`), context7 (library docs), playwright. Secrets are never stored in the repo.
 
 ### AI work layer
-- **Local models**: Ollama runs as a user service on the Radeon 780M via Vulkan (about 1.3x faster generation than CPU on `qwen2.5-coder:3b`). Plan for 3-4B models; see `docs/local-models.md`.
-- **Dictation** (`SUPER+D`): `ai-os-dictate` records, transcribes with whisper.cpp (`base.en`) and types at the cursor. Pipeline verified on silence; **accuracy on a real voice is not yet confirmed**.
+- **Models**: local models are parked. Ollama is set up (user service, Vulkan on the Radeon 780M, about 1.3x faster than CPU) but disabled; the plan is a proxy to models on the user's own servers, to be provided later. See `docs/local-models.md`.
+- **Dictation** (`SUPER+D`): `ai-os-dictate` (whisper.cpp `base.en`) exists but voice is **deferred** by the user; pipeline verified on silence only.
 
 ### Look
 macOS-style rounding (12), large soft shadows, frosted blur behind the bar/launcher/notifications, translucent terminal (92%), spring animations, Inter-first font stack (Inter itself is not installed; install `inter-font`).
@@ -100,8 +100,8 @@ macOS-style rounding (12), large soft shadows, frosted blur behind the bar/launc
 ## 7. Known gaps and caveats
 - **Containers**: rootless podman with `DOCKER_HOST` pointing at its user socket; there is no `docker` command (add `podman-docker` if scripts need one).
 - **mise** (node/python runtimes) is not installed yet (`ai-os-6uj.2`; needs `sudo pacman -S mise`).
-- **Dictation** needs a real-voice test before the bead can close (`ai-os-6yv.3`).
-- Only 14 GB RAM, shared with the iGPU: keep local models small.
+- **Voice dictation** is deferred (`ai-os-6yv.3`); the `SUPER+D` bind is still active.
+- Only 14 GB RAM, shared with the iGPU, which is why models are planned to run remotely.
 - `libxcrypt-compat` was added only because the copied `bbl` binary needs `libcrypt.so.1`.
 - Six `.pacnew` files (pacman.conf, resolv.conf, mirrorlists) were waiting for a merge when this was written.
 - Some tools replace symlinks when they write (e.g. nvim's `lazy-lock.json`); re-run `05-link-dotfiles.sh` to restore.
@@ -113,8 +113,8 @@ macOS-style rounding (12), large soft shadows, frosted blur behind the bar/launc
 |---|---|
 | ai-os-6uj.2 | mise + default node/python |
 | ai-os-6uj.7 | Evaluate OpenCode / aider as model-agnostic agents |
-| ai-os-6yv.3 | Dictation: built, awaiting a real-voice test |
-| ai-os-6yv.2 | Open WebUI on localhost |
+| ai-os-6yv.3 | Voice dictation (deferred; built, untested on a real voice) |
+| ai-os-6yv.2 | Open WebUI on localhost (deferred until the model proxy exists) |
 | ai-os-6yv.5 | Obsidian vault as agent memory/notes |
 | ai-os-x51 | GitHub MCP server (needs a token) |
 
