@@ -23,3 +23,8 @@ hl.window_rule({
     size = "900 600",
     center = true,
 })
+
+-- Frosted menu bar / launcher / notifications (blur behind translucent layers)
+for _, ns in ipairs({ "waybar", "fuzzel", "notifications", "swayosd" }) do
+    hl.layer_rule({ name = "blur-" .. ns, match = { namespace = ns }, blur = true, ignore_alpha = 0.2 })
+end
