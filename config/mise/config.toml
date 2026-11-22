@@ -1,0 +1,4 @@
+# Global runtimes (mise). Per-project versions go in the project's mise.toml / .tool-versions.
+[tools]
+node = "lts"
+python = "3.13"
