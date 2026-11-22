@@ -1,0 +1,54 @@
+#!/bin/bash
+# Battery tuning for this laptop.
+#   ai-os-power status        battery health, discharge rate, runtime estimate, profile, top CPU users
+#   ai-os-power mode battery  power-saver profile + Hyprland blur/shadows/animations off
+#   ai-os-power mode ac       balanced profile + effects back on (hyprctl reload)
+#   ai-os-power watch         apply the right mode now and whenever AC is plugged/unplugged (autostarted)
+# Env: AI_OS_BATTERY_PROFILE (default power-saver), AI_OS_AC_PROFILE (default balanced).
+set -u
+PS=/sys/class/power_supply
+ac_online() { for d in $PS/*; do [ "$(cat "$d/type" 2>/dev/null)" = Mains ] && { cat "$d/online"; return; }; done; echo 1; }
+bat() { for d in $PS/BAT*; do [ -d "$d" ] && { echo "$d"; return; }; done; }
+
+mode() {
+  case "$1" in
+    battery)
+      powerprofilesctl set "${AI_OS_BATTERY_PROFILE:-power-saver}" 2>/dev/null
+      hyprctl eval 'hl.config({ decoration = { blur = { enabled = false }, shadow = { enabled = false } }, animations = { enabled = false } })' >/dev/null 2>&1 ;;
+    ac)
+      powerprofilesctl set "${AI_OS_AC_PROFILE:-balanced}" 2>/dev/null
+      hyprctl reload >/dev/null 2>&1 ;;
+    *) echo "usage: ai-os-power mode battery|ac" >&2; exit 1 ;;
+  esac
+}
+
+status() {
+  local b; b="$(bat)"; [ -n "$b" ] || { echo "no battery"; return; }
+  local st cap ef ed en pw cyc
+  st=$(<"$b/status"); cap=$(<"$b/capacity"); ef=$(<"$b/energy_full"); ed=$(<"$b/energy_full_design")
+  en=$(<"$b/energy_now"); pw=$(<"$b/power_now"); cyc=$(cat "$b/cycle_count" 2>/dev/null || echo "?")
+  printf 'battery: %s%% (%s), health %d%% of design (%d cycles)\n' "$cap" "$st" $((ef*100/ed)) "$cyc"
+  printf 'profile: %s   AC: %s\n' "$(powerprofilesctl get 2>/dev/null)" "$([ "$(ac_online)" = 1 ] && echo plugged || echo unplugged)"
+  if [ "$st" = Discharging ] && [ "$pw" -gt 0 ]; then
+    awk -v p="$pw" -v e="$en" -v f="$ef" 'BEGIN{printf "draw: %.1f W   runtime left: %.1f h   full-battery runtime at this draw: %.1f h\n", p/1e6, e/p, f/p}'
+  else
+    awk -v p="$pw" 'BEGIN{printf "power now: %.1f W (%s) - unplug to measure battery draw\n", p/1e6, "charging/idle"}'
+  fi
+  local bl; bl="$(brightnessctl -m 2>/dev/null | cut -d, -f4)"; [ -n "$bl" ] && echo "brightness: $bl"
+  echo "top CPU (3 s sample):"
+  top -b -n2 -d3 -w 140 2>/dev/null | awk '/^top -/{n++} n==2 && /^ *[0-9]+ /{printf "  %5s%%  %s\n",$9,$12; if(++c==6) exit}'
+}
+
+watch_ac() {
+  local last="" cur
+  apply() { cur="$(ac_online)"; [ "$cur" = "$last" ] && return; last="$cur"; [ "$cur" = 1 ] && mode ac || mode battery; }
+  sleep 3; apply
+  udevadm monitor -u -s power_supply 2>/dev/null | while read -r _; do apply; done
+}
+
+case "${1:-status}" in
+  status) status ;;
+  mode) mode "${2:-}" ;;
+  watch) watch_ac ;;
+  *) sed -n '2,7p' "$0"; exit 1 ;;
+esac
