@@ -1,6 +1,6 @@
 # Turning CachyOS into ai-os
 
-*Status as of 2026-11-22. Source of truth for tasks is beads (`bd list`); source of truth for configuration is this repo.*
+*Status as of 2026-11-22 (updated after Ollama). Source of truth for tasks is beads (`bd list`); source of truth for configuration is this repo.*
 
 ## 1. What ai-os is
 
@@ -69,6 +69,13 @@ docs/     plan.md (decisions), updates.md (update + rollback), this file
 - **Review tools**: `lazygit` (`SUPER+G`) and `lazydocker` (`SUPER+SHIFT+D`).
 - **Shared MCP servers** (`config/mcp/servers.json`, applied with `ai-os-mcp claude`): filesystem (scoped to `~/code`), context7 (library docs), playwright. Secrets are never stored in the repo.
 
+### AI work layer
+- **Local models**: Ollama runs as a user service on the Radeon 780M via Vulkan (about 1.3x faster generation than CPU on `qwen2.5-coder:3b`). Plan for 3-4B models; see `docs/local-models.md`.
+- **Dictation** (`SUPER+D`): `ai-os-dictate` records, transcribes with whisper.cpp (`base.en`) and types at the cursor. Pipeline verified on silence; **accuracy on a real voice is not yet confirmed**.
+
+### Look
+macOS-style rounding (12), large soft shadows, frosted blur behind the bar/launcher/notifications, translucent terminal (92%), spring animations, Inter-first font stack (Inter itself is not installed; install `inter-font`).
+
 ### Safety
 - **Agent sandbox** (`ai-os-sandbox`, see `docs/sandbox.md`): runs Claude Code with permissions skipped inside a rootless podman container that sees only the project, a private Claude config and the login file. Tested: host secrets hidden, system paths read-only, worktrees and offline mode work, Claude authenticates. Network is not filtered.
 - `ai-os-update` (also in the system menu): lists pending updates, takes named root + home snapshots, runs `paru -Syu`, flatpak, re-links dotfiles, then reports reboot needs, `.pacnew` files, orphans and failed units. `docs/updates.md` has the rollback ladder, from one package to a full Limine snapshot boot.
@@ -93,6 +100,8 @@ docs/     plan.md (decisions), updates.md (update + rollback), this file
 ## 7. Known gaps and caveats
 - **Containers**: rootless podman with `DOCKER_HOST` pointing at its user socket; there is no `docker` command (add `podman-docker` if scripts need one).
 - **mise** (node/python runtimes) is not installed yet (`ai-os-6uj.2`; needs `sudo pacman -S mise`).
+- **Dictation** needs a real-voice test before the bead can close (`ai-os-6yv.3`).
+- Only 14 GB RAM, shared with the iGPU: keep local models small.
 - `libxcrypt-compat` was added only because the copied `bbl` binary needs `libcrypt.so.1`.
 - Six `.pacnew` files (pacman.conf, resolv.conf, mirrorlists) were waiting for a merge when this was written.
 - Some tools replace symlinks when they write (e.g. nvim's `lazy-lock.json`); re-run `05-link-dotfiles.sh` to restore.
@@ -104,10 +113,9 @@ docs/     plan.md (decisions), updates.md (update + rollback), this file
 |---|---|
 | ai-os-6uj.2 | mise + default node/python |
 | ai-os-6uj.7 | Evaluate OpenCode / aider as model-agnostic agents |
-| ai-os-6yv.1 | Ollama + local model choice for AMD Phoenix1 (ROCm/Vulkan) |
-| ai-os-6yv.3 | Push-to-talk dictation (whisper.cpp) on a hotkey |
+| ai-os-6yv.3 | Dictation: built, awaiting a real-voice test |
 | ai-os-6yv.2 | Open WebUI on localhost |
 | ai-os-6yv.5 | Obsidian vault as agent memory/notes |
 | ai-os-x51 | GitHub MCP server (needs a token) |
 
-Local models are bounded by shared memory on the iGPU; expect small to mid-size quantised models, not 70B.
+Local models are bounded by shared memory on the iGPU; expect small quantised models (3-4B), not 70B.
