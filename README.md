@@ -35,7 +35,7 @@ docs/     ai-os-transformation.md (what was built and why), plan.md, updates.md,
 
 ## Setup order
 
-1. `scripts/00-bootstrap-beads-dolt.sh` - dolt + [beads](https://github.com/steveyegge/beads) task tracking
+1. `scripts/00-bootstrap-beads-dolt.sh` - dolt + [beads](https://github.com/gastownhall/beads) task tracking
 2. `scripts/seed-beads.sh` - create the epics/tasks (refuses to run twice)
 3. `scripts/01-install-hyprland.sh` - Hyprland stack from the official repos
 4. `scripts/03-verify.sh` - read-only check; `scripts/04-setup-snapper.sh` - finish snapper (timeline, /home, user access)
