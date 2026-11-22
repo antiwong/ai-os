@@ -21,6 +21,7 @@
   },
   "tray": { "icon-size": 16, "spacing": 10 },
   "bluetooth": {
+    "on-click": "ai-os-popup bluetui",
     "format": "󰂯",
     "format-disabled": "󰂲",
     "format-off": "󰂲",
@@ -30,6 +31,8 @@
     "tooltip-format-enumerate-connected": "{device_alias}\t{device_address}"
   },
   "network": {
+    "on-click": "ai-os-popup nmtui",
+    "on-click-right": "nm-connection-editor",
     "format-wifi": "󰤨 {signalStrength}%",
     "format-ethernet": "󰈀",
     "format-disconnected": "󰤭",
@@ -40,7 +43,8 @@
     "format": "{icon} {volume}%",
     "format-muted": "󰝟",
     "format-icons": { "default": ["󰕿", "󰖀", "󰕾"] },
-    "on-click": "swayosd-client --output-volume mute-toggle"
+    "on-click": "pavucontrol",
+    "on-click-right": "swayosd-client --output-volume mute-toggle"
   },
   "battery": {
     "states": { "warning": 25, "critical": 10 },

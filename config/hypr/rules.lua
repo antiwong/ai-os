@@ -14,3 +14,12 @@ hl.window_rule({
     size = "monitor_w*0.75 monitor_h*0.75",
     center = true,
 })
+
+-- Floating TUI popups launched from waybar (scripts/ai-os-popup)
+hl.window_rule({
+    name = "tui-popup",
+    match = { class = "^ai-os[.]popup$" },
+    float = true,
+    size = "900 600",
+    center = true,
+})

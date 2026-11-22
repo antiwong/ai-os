@@ -1,0 +1,3 @@
+#!/bin/sh
+# Run a TUI in a small floating Ghostty window (used by waybar clicks). Usage: ai-os-popup <cmd> [args]
+exec ghostty --gtk-single-instance=false --class=ai-os.popup --title="$1" -e "$@" >/dev/null 2>&1
