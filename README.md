@@ -46,7 +46,7 @@ Log out and pick the Hyprland session at the login screen.
 
 ## Commands (installed to `~/.local/bin`)
 
-`ai-os-theme` theme switcher · `ai-os-wallpaper` wallpaper generator · `ai-os-update` update routine · `ai-os-power` battery mode and status · `ai-os-agent`/`ai-os-agents` worktree agents · `ai-os-sandbox` containerised agent · `ai-os-claude` scratchpad · `ai-os-shot[-agent]` screenshots · `ai-os-dictate` voice typing (off by default) · `ai-os-mcp` shared MCP servers · `ai-os-note` Obsidian quick capture · `ai-os-menu` system menu · `ai-os-popup` TUI popups
+`ai-os-theme` theme switcher · `ai-os-wallpaper` wallpaper generator · `ai-os-update` update routine · `ai-os-power` battery mode and status · `ai-os-panel` AMD panel power saving · `ai-os-agent`/`ai-os-agents` worktree agents · `ai-os-sandbox` containerised agent · `ai-os-claude` scratchpad · `ai-os-shot[-agent]` screenshots · `ai-os-dictate` voice typing (off by default) · `ai-os-mcp` shared MCP servers · `ai-os-note` Obsidian quick capture · `ai-os-menu` system menu · `ai-os-popup` TUI popups
 
 ## Status and honesty
 

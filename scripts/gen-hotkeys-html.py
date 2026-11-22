@@ -49,6 +49,7 @@ CMDS=[("agent <branch> [cmd]","New git worktree + tmux window running a coding a
 ("ai-os-theme [name]","Switch theme: colours, prompt, wallpaper (no argument: pick from a menu)"),
 ("ai-os-update [--check]","Update system with snapshots first; --check only lists what is pending"),
 ("ai-os-power status","Battery health, draw in watts, runtime estimate, top CPU users"),
+("ai-os-panel test","Measure AMD panel power saving unplugged; install/uninstall the auto rule"),
 ("ai-os-sandbox","Run Claude Code (permissions skipped) in a rootless podman container, project only"),
 ("ai-os-note \"text\"","Append a line to the Obsidian vault's Agent/Inbox.md"),
 ("ai-os-mcp claude","Apply the shared MCP servers to Claude Code")]

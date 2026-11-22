@@ -1,0 +1,81 @@
+#!/bin/bash
+# AMD panel power saving ("ABM"): the amdgpu driver can dim the backlight and boost pixel values to save
+# power on the built-in panel. Level 0 = off, 1-4 = increasing savings and visible colour/contrast change.
+#
+#   ai-os-panel status            current level, AC state, whether the auto rule is installed
+#   ai-os-panel set <0-4>         set the level now (resets at reboot unless the rule is installed)
+#   ai-os-panel install [level]   udev rule: <level> (default 3) on battery, 0 on AC; applies it now
+#   ai-os-panel uninstall         remove the rule and set level 0
+#   ai-os-panel test [secs] [lvl] unplugged A/B: measure battery draw at level 0 vs <lvl> (default 3), 0-lvl-0-lvl
+#   ai-os-panel --print-rule [level]   show the udev rule without installing
+# Writing needs root: the script re-runs itself with sudo when it must.
+set -u
+RULE=/etc/udev/rules.d/90-ai-os-panel.rules
+GLOB="${AI_OS_PANEL_GLOB:-/sys/class/drm/card*-eDP-*/amdgpu/panel_power_savings}"   # override only for testing
+PS="${AI_OS_PANEL_PS:-/sys/class/power_supply}"
+files() { compgen -G "$GLOB" || true; }
+need_root() { [ "$(id -u)" = 0 ] || [ "${AI_OS_PANEL_SKIP_ROOT:-0}" = 1 ] || exec sudo "$(readlink -f "$0")" "$@"; }
+valid() { case "${1:-}" in 0|1|2|3|4) return 0 ;; *) echo "level must be 0-4" >&2; return 1 ;; esac; }
+ac_online() { for d in $PS/*; do [ "$(cat "$d/type" 2>/dev/null)" = Mains ] && { cat "$d/online"; return; }; done; echo 1; }
+battery_dir() { for d in $PS/BAT*; do [ -d "$d" ] && { echo "$d"; return; }; done; }
+current() { local f; f="$(files | head -1)"; [ -n "$f" ] && cat "$f"; }
+setlevel() { local f; for f in $(files); do echo "$1" > "$f" || return 1; done; }
+
+rule() { # rule <battery-level>
+  local lvl="$1" loop='for f in /sys/class/drm/card*-eDP-*/amdgpu/panel_power_savings; do echo %s > $$f; done'
+  cat <<R
+# ai-os-panel: AMD panel power saving ${lvl} on battery, off on AC. Remove with: ai-os-panel uninstall
+SUBSYSTEM=="power_supply", ATTR{type}=="Mains", ATTR{online}=="0", RUN+="/bin/sh -c '$(printf "$loop" "$lvl")'"
+SUBSYSTEM=="power_supply", ATTR{type}=="Mains", ATTR{online}=="1", RUN+="/bin/sh -c '$(printf "$loop" 0)'"
+R
+}
+
+status() {
+  local f; f="$(files | head -1)"
+  [ -n "$f" ] || { echo "no AMD eDP panel power-saving control found (pattern: $GLOB)"; return 1; }
+  echo "panel power saving: level $(cat "$f") of 4  ($f)"
+  echo "AC: $([ "$(ac_online)" = 1 ] && echo plugged || echo unplugged)"
+  if [ -f "$RULE" ]; then echo "auto rule: installed ($(grep -o 'echo [0-9]' "$RULE" | head -1 | tr -d 'echo ') on battery, 0 on AC)"; else echo "auto rule: not installed (run: ai-os-panel install)"; fi
+}
+
+draw() { # average battery draw in W over $1 seconds
+  local b n=0 sum=0 p; b="$(battery_dir)"
+  for ((i = 0; i < $1; i += 2)); do p=$(<"$b/power_now"); sum=$((sum + p)); n=$((n + 1)); sleep 2; done
+  awk -v s="$sum" -v n="$n" 'BEGIN{printf "%.2f", s/n/1e6}'
+}
+
+test_levels() {
+  local secs="${1:-20}" lvl="${2:-3}" b i w
+  valid "$lvl" || exit 1
+  b="$(battery_dir)"; [ -n "$b" ] || { echo "no battery"; exit 1; }
+  [ "$(cat "$b/status")" = Discharging ] || { echo "unplug the charger first (battery must be Discharging)"; exit 1; }
+  ORIG_LEVEL="$(current)"   # global on purpose: the EXIT trap runs after this function returns
+  trap 'setlevel "$ORIG_LEVEL"' EXIT
+  echo "Measuring ${secs}s per step after a ${AI_OS_PANEL_SETTLE:-8}s settle; leave the machine alone. Sequence: 0, $lvl, 0, $lvl"
+  declare -A sum cnt
+  for i in 0 "$lvl" 0 "$lvl"; do
+    setlevel "$i"; sleep "${AI_OS_PANEL_SETTLE:-8}"
+    w="$(draw "$secs")"; printf '  level %s: %s W\n' "$i" "$w"
+    sum[$i]=$(awk -v a="${sum[$i]:-0}" -v b="$w" 'BEGIN{print a+b}'); cnt[$i]=$(( ${cnt[$i]:-0} + 1 ))
+  done
+  local a0 aL
+  a0=$(awk -v s="${sum[0]}" -v n="${cnt[0]}" 'BEGIN{printf "%.2f", s/n}'); aL=$(awk -v s="${sum[$lvl]}" -v n="${cnt[$lvl]}" 'BEGIN{printf "%.2f", s/n}')
+  awk -v a="$a0" -v l="$aL" -v lv="$lvl" 'BEGIN{printf "\naverage: level 0 = %.2f W, level %s = %.2f W  ->  saves %.2f W (%.1f%%)\n", a, lv, l, a-l, (a-l)*100/a}'
+  setlevel "$ORIG_LEVEL"; trap - EXIT
+  echo "Restored level $ORIG_LEVEL. Differences under ~0.2 W are within noise."
+}
+
+case "${1:-status}" in
+  status) status ;;
+  set) valid "${2:-}" || exit 1; need_root "$@"; setlevel "$2" && echo "level set to $2" ;;
+  install)
+    lvl="${2:-3}"; valid "$lvl" || exit 1; need_root "$@"
+    rule "$lvl" > "$RULE" && echo "wrote $RULE" && udevadm control --reload 2>/dev/null
+    if [ "$(ac_online)" = 1 ]; then setlevel 0; else setlevel "$lvl"; fi
+    echo "applied now for current power state (AC $( [ "$(ac_online)" = 1 ] && echo plugged || echo unplugged)); it switches automatically on plug/unplug"
+    echo "note: it is not re-applied at boot until the next AC change; run 'ai-os-panel install' again, or 'ai-os-panel set $lvl', if you boot unplugged" ;;
+  uninstall) need_root "$@"; rm -f "$RULE"; udevadm control --reload 2>/dev/null; setlevel 0; echo "rule removed, level 0" ;;
+  test) need_root "$@"; test_levels "${2:-20}" "${3:-3}" ;;
+  --print-rule) valid "${2:-3}" && rule "${2:-3}" ;;
+  *) sed -n '2,15p' "$0"; exit 1 ;;
+esac

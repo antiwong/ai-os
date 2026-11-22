@@ -116,6 +116,7 @@ work from the keyboard's media keys, with an on-screen display (swayosd).
 | `ai-os-theme [name]` | Switch theme: colours, prompt, wallpaper (no argument: pick from a menu) |
 | `ai-os-update [--check]` | Update the system with snapshots first; `--check` only lists what is pending |
 | `ai-os-power status` | Battery health, draw in watts, runtime estimate, top CPU users |
+| `ai-os-panel status` / `test` / `install` | AMD panel power saving: show level, measure the saving unplugged, install the auto rule |
 | `ai-os-sandbox` | Run Claude Code (permissions skipped) in a rootless podman container, project only |
 | `ai-os-note "text"` | Append a line to the Obsidian vault's `Agent/Inbox.md` |
 | `ai-os-mcp claude` | Apply the shared MCP servers to Claude Code |
