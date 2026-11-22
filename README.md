@@ -8,7 +8,7 @@ note capture wired in. Plasma stays installed as the fallback session.
 > (Ryzen 7 7840U / Radeon 780M, 1920x1200). Read the scripts before running them, and expect to adapt paths,
 > monitors and packages. Nothing here runs `sudo` for you.
 
-![The four built-in themes: Catppuccin Mocha and Latte, Gruvbox, Tokyo Night](docs/img/wallpapers.jpg)
+![The four built-in themes (Catppuccin Mocha and Latte, Gruvbox Dark, Tokyo Night): the same terminal and prompt over each theme's generated wallpaper](docs/img/hero.jpg)
 
 ## What you get
 
