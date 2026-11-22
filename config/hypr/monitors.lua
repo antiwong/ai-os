@@ -8,3 +8,7 @@ hl.monitor({ output = "eDP-1", mode = "1920x1200@60", position = "0x0", scale = 
 -- hl.monitor({ output = "DP-1", mode = "3840x2160@60", position = "auto-right", scale = 1.5 })
 -- Mirror the laptop panel onto a projector:
 -- hl.monitor({ output = "HDMI-A-1", mode = "preferred", position = "auto", scale = 1, mirror = "eDP-1" })
+
+-- Layout, scale and mode chosen with `ai-os-display` (SUPER+SHIFT+M). Rules are keyed by monitor
+-- description, so they follow a monitor to another port. Generated file; absent until first use.
+pcall(dofile, os.getenv("HOME") .. "/.config/ai-os/monitors.lua")

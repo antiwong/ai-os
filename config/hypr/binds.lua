@@ -55,6 +55,8 @@ hl.bind(mod .. " + D",         hl.dsp.exec_cmd("ai-os-dictate toggle"))
 -- Quick note into the Obsidian vault (Agent/Inbox.md); SHIFT adds the clipboard instead
 hl.bind(mod .. " + N",         hl.dsp.exec_cmd("ai-os-note"))
 hl.bind(mod .. " + SHIFT + N", hl.dsp.exec_cmd("ai-os-note --clip"))
+-- Displays: layout, scale, resolution for external monitors
+hl.bind(mod .. " + SHIFT + M", hl.dsp.exec_cmd("ai-os-display"))
 -- Clipboard history picker (cliphist)
 hl.bind(mod .. " + CTRL + V",  hl.dsp.exec_cmd("sh -c 'cliphist list | fuzzel --dmenu | cliphist decode | wl-copy'"))
 

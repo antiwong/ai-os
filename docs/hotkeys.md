@@ -16,6 +16,7 @@ Keys come from `config/hypr/binds.lua`, `config/hypr/input.lua` (gestures), `con
 | `SUPER + C` | Claude Code scratchpad: first press launches, later presses show/hide |
 | `SUPER + ESCAPE` | System menu (screenshot, update, lock, power) |
 | `SUPER + SHIFT + T` | Theme switcher (Catppuccin Mocha/Latte, Gruvbox, Tokyo Night) |
+| `SUPER + SHIFT + M` | Displays menu: extend left/right, mirror, laptop-only/external-only, scale, resolution (also in the system menu) |
 | `SUPER + D` | Dictation: press to listen, press again to type what you said |
 | `SUPER + N` | Quick note to Obsidian (Agent/Inbox.md); `SUPER + SHIFT + N` saves the clipboard |
 | `SUPER + SHIFT + A` | Screenshot a region and send it to the Claude scratchpad |
@@ -116,6 +117,7 @@ work from the keyboard's media keys, with an on-screen display (swayosd).
 | `ai-os-theme [name]` | Switch theme: colours, prompt, wallpaper (no argument: pick from a menu) |
 | `ai-os-update [--check]` | Update the system with snapshots first; `--check` only lists what is pending |
 | `ai-os-power status` | Battery health, draw in watts, runtime estimate, top CPU users |
+| `ai-os-display status` / `layout` / `scale` / `mode` | Multi-monitor setup from the terminal (same as the menu) |
 | `ai-os-panel status` / `test` / `install` | AMD panel power saving: show level, measure the saving unplugged, install the auto rule |
 | `ai-os-sandbox` | Run Claude Code (permissions skipped) in a rootless podman container, project only |
 | `ai-os-note "text"` | Append a line to the Obsidian vault's `Agent/Inbox.md` |
