@@ -56,4 +56,5 @@ Generated files (`~/.config/ai-os/theme/`, wallpapers, btop/lazygit/lazydocker c
 
 ## License
 
-No license has been chosen yet, so by default all rights are reserved. Add a `LICENSE` file if you want others to reuse this.
+[MIT](LICENSE): free for anyone to use, copy, modify and share, including commercially. Keep the copyright notice.
+This is a personal setup shared as-is, with no warranty: it changes system settings, so read the scripts and keep snapshots before running anything.
