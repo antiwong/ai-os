@@ -18,3 +18,7 @@ if nv then
     hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
     hl.env("NVD_BACKEND", "direct")
 end
+
+-- Rootless podman API socket, so docker-API tools (lazydocker, compose) find a runtime.
+-- Needs: systemctl --user enable --now podman.socket
+hl.env("DOCKER_HOST", "unix://" .. (os.getenv("XDG_RUNTIME_DIR") or "/run/user/1000") .. "/podman/podman.sock")
