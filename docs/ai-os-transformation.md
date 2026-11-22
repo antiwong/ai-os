@@ -70,6 +70,7 @@ docs/     plan.md (decisions), updates.md (update + rollback), this file
 - **Shared MCP servers** (`config/mcp/servers.json`, applied with `ai-os-mcp claude`): filesystem (scoped to `~/code`), context7 (library docs), playwright. Secrets are never stored in the repo.
 
 ### Safety
+- **Agent sandbox** (`ai-os-sandbox`, see `docs/sandbox.md`): runs Claude Code with permissions skipped inside a rootless podman container that sees only the project, a private Claude config and the login file. Tested: host secrets hidden, system paths read-only, worktrees and offline mode work, Claude authenticates. Network is not filtered.
 - `ai-os-update` (also in the system menu): lists pending updates, takes named root + home snapshots, runs `paru -Syu`, flatpak, re-links dotfiles, then reports reboot needs, `.pacnew` files, orphans and failed units. `docs/updates.md` has the rollback ladder, from one package to a full Limine snapshot boot.
 
 ## 5. Daily workflow
@@ -90,7 +91,7 @@ docs/     plan.md (decisions), updates.md (update + rollback), this file
 6. Not in git: the `bbl` binary and Bible packs, browser profiles, Obsidian vaults, git identity, tokens.
 
 ## 7. Known gaps and caveats
-- **lazydocker** shows "cannot connect to the Docker daemon" until a container runtime is installed (`ai-os-61m`).
+- **Containers**: rootless podman with `DOCKER_HOST` pointing at its user socket; there is no `docker` command (add `podman-docker` if scripts need one).
 - **mise** (node/python runtimes) is not installed yet (`ai-os-6uj.2`; needs `sudo pacman -S mise`).
 - `libxcrypt-compat` was added only because the copied `bbl` binary needs `libcrypt.so.1`.
 - Six `.pacnew` files (pacman.conf, resolv.conf, mirrorlists) were waiting for a merge when this was written.
@@ -107,8 +108,6 @@ docs/     plan.md (decisions), updates.md (update + rollback), this file
 | ai-os-6yv.3 | Push-to-talk dictation (whisper.cpp) on a hotkey |
 | ai-os-6yv.2 | Open WebUI on localhost |
 | ai-os-6yv.5 | Obsidian vault as agent memory/notes |
-| ai-os-l9q.1 | Agent sandboxing: scoped permissions / containers for untrusted runs |
-| ai-os-61m | Container runtime (podman/docker) |
 | ai-os-x51 | GitHub MCP server (needs a token) |
 
 Local models are bounded by shared memory on the iGPU; expect small to mid-size quantised models, not 70B.

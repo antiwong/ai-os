@@ -1,0 +1,68 @@
+#!/bin/sh
+# Run an agent (default: Claude Code with permissions skipped) in a rootless podman container.
+# The agent can only see: the project directory (and its git dir, for worktrees), a private
+# Claude config dir, and your Claude login file. It cannot see ~/.ssh, ~/.config, ~/Documents,
+# browser profiles, other repos, or your host Claude history. Root fs is read-only, no
+# capabilities, no privilege escalation, memory/pids capped.
+#
+# Usage:
+#   ai-os-sandbox build                  build/refresh the image (needs network)
+#   ai-os-sandbox [opts] [-- cmd...]     run in the current git repo/worktree (default cmd: claude --dangerously-skip-permissions)
+# Opts: --net=none   no network (for offline tasks; Claude itself needs the network)
+#       --dir <path> run against another directory (default: current git toplevel, else $PWD)
+#       --safe       default cmd without --dangerously-skip-permissions
+# Works with worktrees:  ai-os-agent <branch> ai-os-sandbox
+# Network is NOT filtered: the agent can still reach the internet (and your MCP-free Claude login).
+set -eu
+IMG=localhost/ai-os-sandbox
+ROOT="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+SB="$HOME/.local/share/ai-os/sandbox/claude"
+
+if [ "${1:-}" = build ]; then
+  exec podman build -t "$IMG" -f "$ROOT/config/sandbox/Containerfile" "$ROOT/config/sandbox"
+fi
+
+net=""; dir=""; safe=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --net=none) net="--network=none" ;;
+    --dir) dir="$2"; shift ;;
+    --safe) safe=1 ;;
+    --) shift; break ;;
+    *) break ;;
+  esac
+  shift
+done
+[ $# -gt 0 ] || { if [ $safe = 1 ]; then set -- claude; else set -- claude --dangerously-skip-permissions; fi; }
+
+[ -n "$dir" ] || dir="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+dir="$(cd "$dir" && pwd)"
+case "$dir" in "$HOME"|/|/home|/home/*/.ssh*|"$HOME/.config"*|"$HOME/.gnupg"*)
+  echo "refusing to sandbox over $dir (too broad); cd into a project" >&2; exit 1 ;; esac
+podman image exists "$IMG" || { echo "image missing: run 'ai-os-sandbox build'" >&2; exit 1; }
+
+mkdir -p "$SB"
+[ -f "$SB/.claude.json" ] || printf '{"hasCompletedOnboarding":true,"theme":"dark"}\n' > "$SB/.claude.json"
+[ -f "$HOME/.claude/.credentials.json" ] || { echo "no Claude login found (~/.claude/.credentials.json)" >&2; exit 1; }
+
+mounts="-v $dir:$dir:rw"
+common="$(git -C "$dir" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+case "$common" in ""|"$dir"/*) ;; *) mounts="$mounts -v $common:$common:rw" ;; esac
+
+gitenv=""
+n="$(git config user.name 2>/dev/null || true)"; e="$(git config user.email 2>/dev/null || true)"
+[ -n "$n" ] && gitenv="$gitenv -e GIT_AUTHOR_NAME=$n -e GIT_COMMITTER_NAME=$n"
+[ -n "$e" ] && gitenv="$gitenv -e GIT_AUTHOR_EMAIL=$e -e GIT_COMMITTER_EMAIL=$e"
+
+ti=-i; [ -t 0 ] && ti=-it
+# shellcheck disable=SC2086
+exec podman run --rm $ti --name "ai-os-sandbox-$$" \
+  --userns=keep-id:uid=1000,gid=1000 --user 1000:1000 \
+  --cap-drop=all --security-opt=no-new-privileges --read-only \
+  --pids-limit=512 --memory="${AI_OS_SANDBOX_MEM:-8g}" $net \
+  --tmpfs /tmp:rw,exec,mode=1777 --tmpfs /home/node:rw,exec,mode=1777 \
+  -v "$SB:/home/node/.claude:rw" \
+  -v "$HOME/.claude/.credentials.json:/home/node/.claude/.credentials.json:rw" \
+  $mounts $gitenv \
+  -e CLAUDE_CONFIG_DIR=/home/node/.claude -e CLAUDE_CODE_TMPDIR=/home/node/.cctmp -e HOME=/home/node -e TERM="${TERM:-xterm-256color}" \
+  -w "$dir" "$IMG" "$@"
