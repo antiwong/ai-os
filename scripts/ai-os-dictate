@@ -1,0 +1,36 @@
+#!/bin/sh
+# Push-to-talk style dictation: record -> whisper.cpp -> type into the focused window.
+#   ai-os-dictate toggle   first call starts recording, second stops, transcribes and types
+#   ai-os-dictate start | stop | cancel
+# Model: $AI_OS_WHISPER_MODEL or ~/.local/share/ai-os/whisper/ggml-base.en.bin
+set -u
+run="${XDG_RUNTIME_DIR:-/tmp}"; pidf="$run/ai-os-dictate.pid"; wav="$run/ai-os-dictate.wav"
+model="${AI_OS_WHISPER_MODEL:-$HOME/.local/share/ai-os/whisper/ggml-base.en.bin}"
+note() { notify-send -t 1500 -h string:x-canonical-private-synchronous:ai-os-dictate "Dictation" "$1" 2>/dev/null; }
+recording() { [ -f "$pidf" ] && kill -0 "$(cat "$pidf")" 2>/dev/null; }
+
+start() {
+  recording && return
+  [ -f "$model" ] || { note "model missing: $model"; exit 1; }
+  pw-record --rate 16000 --channels 1 --format s16 "$wav" &
+  echo $! > "$pidf"; note "Listening..."
+}
+stop() {
+  recording || { note "Not recording"; return; }
+  kill -INT "$(cat "$pidf")"; while kill -0 "$(cat "$pidf")" 2>/dev/null; do sleep 0.05; done; rm -f "$pidf"
+  note "Transcribing..."
+  text="$(whisper-cli -m "$model" -f "$wav" -nt -np -l "${AI_OS_WHISPER_LANG:-en}" 2>/dev/null \
+          | tr '\n' ' ' | sed 's/^ *//; s/ *$//; s/\[[^]]*\]//g; s/([^)]*)//g; s/  */ /g')"
+  rm -f "$wav"
+  [ -n "$text" ] || { note "Heard nothing"; return; }
+  printf '%s' "$text" | wl-copy
+  wtype -- "$text"
+  note "$text"
+}
+cancel() { recording && { kill "$(cat "$pidf")"; rm -f "$pidf" "$wav"; note "Cancelled"; }; }
+
+case "${1:-toggle}" in
+  start) start ;; stop) stop ;; cancel) cancel ;;
+  toggle) if recording; then stop; else start; fi ;;
+  *) sed -n '2,5p' "$0"; exit 1 ;;
+esac
