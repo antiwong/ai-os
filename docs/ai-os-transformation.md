@@ -64,7 +64,7 @@ docs/     plan.md (decisions), updates.md (update + rollback), this file
 ### AI coding layer
 - **Claude Code scratchpad** (`SUPER+C`): a floating Ghostty on a hidden special workspace. First press launches, later presses show/hide; the session keeps running.
 - **Screenshot to agent** (`SUPER+SHIFT+A`): capture a region, open the scratchpad, type `@<path>` so you only add the question.
-- **Agent worktrees** (`agent <branch>` / `ai-os-agent`): one git worktree and one tmux window per agent, so parallel agents never share a working tree. `ai-os-agents` lays out panes. tmux prefix is `Ctrl+A`.
+- **Agent worktrees** (`agent <branch>` / `ai-os-agent`): one git worktree and one tmux window per agent, so parallel agents never share a working tree. `ai-os-agents` lays out panes. tmux prefix is `Ctrl+Space`.
 - **Neovim**: `claudecode.nvim` (`SPACE a ...`) shares buffers/selections with Claude Code and shows its diffs as nvim diffs.
 - **Review tools**: `lazygit` (`SUPER+G`) and `lazydocker` (`SUPER+SHIFT+D`).
 - **Shared MCP servers** (`config/mcp/servers.json`, applied with `ai-os-mcp claude`): filesystem (scoped to `~/code`), context7 (library docs), playwright. Secrets are never stored in the repo.
