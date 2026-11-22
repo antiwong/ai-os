@@ -3,6 +3,10 @@ local ok, t = pcall(dofile, os.getenv("HOME") .. "/.config/ai-os/theme/hypr.lua"
 if not ok then
     t = { active = { "rgba(cba6f7ee)", "rgba(b4befeee)" }, inactive = "rgba(45475aaa)", shadow = 0xee11111b }
 end
+-- On battery the eye-candy is switched off (see scripts/ai-os-power); reads AC state at load so a reload keeps it.
+local on_ac = true
+local f = io.open("/sys/class/power_supply/AC/online", "r")
+if f then on_ac = (f:read("*l") == "1"); f:close() end
 hl.config({
     general = {
         gaps_in = 6, gaps_out = 12, border_size = 1,
@@ -18,11 +22,11 @@ hl.config({
         rounding = 12,
         active_opacity = 1.0, inactive_opacity = 0.96,
         -- macOS-style: large, soft, slightly offset shadow
-        shadow = { enabled = true, range = 40, render_power = 3, color = 0x55000000, offset = "0 12" },
+        shadow = { enabled = on_ac, range = 40, render_power = 3, color = 0x55000000, offset = "0 12" },
         -- frosted-glass blur behind translucent windows
-        blur = { enabled = true, size = 10, passes = 3, vibrancy = 0.2, noise = 0.02, brightness = 1.0, contrast = 1.0 },
+        blur = { enabled = on_ac, size = 10, passes = 3, vibrancy = 0.2, noise = 0.02, brightness = 1.0, contrast = 1.0 },
     },
-    animations = { enabled = true },
+    animations = { enabled = on_ac },
     dwindle = { preserve_split = true },
     misc = { force_default_wallpaper = 0, disable_hyprland_logo = true },
 })
