@@ -7,6 +7,7 @@
 #   ai-os-panel install [level]   udev rule: <level> (default 3) on battery, 0 on AC; applies it now
 #   ai-os-panel uninstall         remove the rule and set level 0
 #   ai-os-panel test [secs] [lvl] unplugged A/B: measure battery draw at level 0 vs <lvl> (default 3), 0-lvl-0-lvl
+#   ai-os-panel why               explain why writes fail with "busy" (who holds the DRM property)
 #   ai-os-panel --print-rule [level]   show the udev rule without installing
 # Writing needs root: the script re-runs itself with sudo when it must.
 set -u
@@ -19,6 +20,21 @@ valid() { case "${1:-}" in 0|1|2|3|4) return 0 ;; *) echo "level must be 0-4" >&
 ac_online() { for d in $PS/*; do [ "$(cat "$d/type" 2>/dev/null)" = Mains ] && { cat "$d/online"; return; }; done; echo 1; }
 battery_dir() { for d in $PS/BAT*; do [ -d "$d" ] && { echo "$d"; return; }; done; }
 current() { local f; f="$(files | head -1)"; [ -n "$f" ] && cat "$f"; }
+# The driver exposes the same control as a DRM connector property. If some program (e.g. KWin on the login
+# screen) has set it to anything but "sysfs", the kernel answers sysfs writes with "busy" and only the DRM
+# master (the compositor) can change it back.
+abm_prop() { # prints: sysfs|off|min|bias-min|bias-max|max|unknown ; nothing if it cannot be read
+  command -v modetest >/dev/null || return 1
+  local v; v="$(modetest -M amdgpu -c 2>/dev/null | awk '/\teDP-[0-9]+/ {on=1; next} /^[0-9]+\t[0-9]+\t/ && !/eDP/ {on=0} on && /adaptive backlight modulation/ {f=1} f && /value:/ {print $2; exit}')"
+  case "$v" in 18446744073709551615) echo sysfs ;; 0) echo off ;; 1) echo min ;; 2) echo bias-min ;; 3) echo bias-max ;; 4) echo max ;; "") return 1 ;; *) echo unknown ;; esac
+}
+explain_locked() {
+  local a; a="$(abm_prop)" || return 0
+  [ "$a" = sysfs ] && return 0
+  echo "Why: the DRM property 'adaptive backlight modulation' is set to '$a' by another program (on this system most likely" >&2
+  echo "KWin on the login screen). While it is not 'sysfs', the kernel refuses sysfs writes with 'busy'. Only the display" >&2
+  echo "master (your compositor) can change it, and Hyprland has no setting for it. This script cannot override that." >&2
+}
 LAST_ERR=""
 setlevel() { # setlevel <0-4>: retries because the driver can answer "busy" while the compositor holds the display
   local f n err
@@ -45,6 +61,7 @@ status() {
   [ -n "$f" ] || { echo "no AMD eDP panel power-saving control found (pattern: $GLOB)"; return 1; }
   echo "panel power saving: level $(cat "$f") of 4  ($f)"
   echo "AC: $([ "$(ac_online)" = 1 ] && echo plugged || echo unplugged)"
+  a="$(abm_prop)" && { if [ "$a" = sysfs ]; then echo "DRM property: sysfs (this script can control it)"; else echo "DRM property: '$a' - sysfs control is LOCKED by another program; writes will fail with 'busy' (see: ai-os-panel why)"; fi; }
   if [ -f "$RULE" ]; then echo "auto rule: installed ($(grep -o 'echo [0-9]' "$RULE" | head -1 | tr -d 'echo ') on battery, 0 on AC)"; else echo "auto rule: not installed (run: ai-os-panel install)"; fi
 }
 
@@ -78,7 +95,7 @@ test_levels() {
 case "${1:-status}" in
   status) status ;;
   set) valid "${2:-}" || exit 1; need_root "$@"
-       if setlevel "$2"; then echo "level set to $2 (now: $(current))"; else echo "could not set level $2: ${LAST_ERR:-unknown error} (still: $(current))" >&2; echo "kernel says: $(journalctl -k -n 40 --no-pager 2>/dev/null | grep -iE 'amdgpu|drm' | tail -2 | cut -c1-160)" >&2; exit 1; fi ;;
+       if setlevel "$2"; then echo "level set to $2 (now: $(current))"; else echo "could not set level $2: ${LAST_ERR:-unknown error} (still: $(current))" >&2; explain_locked; exit 1; fi ;;
   install)
     lvl="${2:-3}"; valid "$lvl" || exit 1; need_root "$@"
     rule "$lvl" > "$RULE" && echo "wrote $RULE" && udevadm control --reload 2>/dev/null
@@ -87,11 +104,13 @@ case "${1:-status}" in
       echo "applied now: level $want for the current power state (AC $( [ "$(ac_online)" = 1 ] && echo plugged || echo unplugged )); it switches automatically on plug/unplug"
     else
       echo "WARNING: the rule is installed, but writing level $want failed now: ${LAST_ERR:-unknown error} (level is still $(current))." >&2
-      echo "The rule uses the same write, so it may fail the same way. Try 'ai-os-panel set $lvl' while unplugged, then 'ai-os-panel status'." >&2
+      explain_locked
+      echo "The rule uses the same write, so it will fail the same way until that lock is gone ('ai-os-panel uninstall' removes it)." >&2
     fi
     echo "note: it is not re-applied at boot until the next AC change; run 'ai-os-panel set $lvl' if you boot unplugged" ;;
   uninstall) need_root "$@"; rm -f "$RULE"; udevadm control --reload 2>/dev/null; setlevel 0; echo "rule removed, level 0" ;;
   test) need_root "$@"; test_levels "${2:-20}" "${3:-3}" ;;
+  why) a="$(abm_prop)" && echo "DRM property 'adaptive backlight modulation' = $a"; explain_locked; [ "${a:-}" = sysfs ] && echo "Nothing is locking it; sysfs control should work."; true ;;
   --print-rule) valid "${2:-3}" && rule "${2:-3}" ;;
-  *) sed -n '2,15p' "$0"; exit 1 ;;
+  *) sed -n '2,17p' "$0"; exit 1 ;;
 esac
