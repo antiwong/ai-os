@@ -1,0 +1,22 @@
+#!/bin/sh
+# Apply config/mcp/servers.json to the agents we use.
+#   ai-os-mcp list          show the canonical servers
+#   ai-os-mcp claude        add missing ones to Claude Code (user scope, all projects)
+#   ai-os-mcp json          print the servers with @HOME@ expanded (paste into other tools)
+set -eu
+ROOT="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+SRC="$ROOT/config/mcp/servers.json"
+expanded() { sed "s|@HOME@|$HOME|g" "$SRC"; }
+case "${1:-list}" in
+  list) jq -r '.mcpServers | to_entries[] | "\(.key)\t\(.value.command) \(.value.args|join(" "))"' "$SRC" | sed "s|@HOME@|$HOME|g" ;;
+  json) expanded | jq '{mcpServers}' ;;
+  claude)
+    have="$(claude mcp list 2>/dev/null)"
+    expanded | jq -c '.mcpServers | to_entries[]' | while read -r e; do
+      name="$(printf '%s' "$e" | jq -r .key)"
+      if printf '%s\n' "$have" | grep -q "^$name:"; then echo "skip $name (already configured)"; continue; fi
+      printf '%s' "$e" | jq -c '.value + {type:"stdio"}' | xargs -0 -I{} claude mcp add-json --scope user "$name" '{}' >/dev/null \
+        && echo "added $name"
+    done ;;
+  *) sed -n '2,5p' "$0"; exit 1 ;;
+esac

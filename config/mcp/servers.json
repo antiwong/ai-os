@@ -1,0 +1,20 @@
+{
+  "_comment": "Canonical MCP servers for all agents. Apply with scripts/ai-os-mcp. No secrets here: servers that need tokens read them from the environment.",
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "@HOME@/code"]
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest", "--headless"]
+    }
+  },
+  "_pending": {
+    "github": "Needs a token. When ready: export GITHUB_PERSONAL_ACCESS_TOKEN (e.g. from `gh auth token`) and add the github MCP server here with env {GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_PERSONAL_ACCESS_TOKEN}}."
+  }
+}
