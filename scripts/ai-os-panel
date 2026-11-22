@@ -19,10 +19,20 @@ valid() { case "${1:-}" in 0|1|2|3|4) return 0 ;; *) echo "level must be 0-4" >&
 ac_online() { for d in $PS/*; do [ "$(cat "$d/type" 2>/dev/null)" = Mains ] && { cat "$d/online"; return; }; done; echo 1; }
 battery_dir() { for d in $PS/BAT*; do [ -d "$d" ] && { echo "$d"; return; }; done; }
 current() { local f; f="$(files | head -1)"; [ -n "$f" ] && cat "$f"; }
-setlevel() { local f; for f in $(files); do echo "$1" > "$f" || return 1; done; }
+LAST_ERR=""
+setlevel() { # setlevel <0-4>: retries because the driver can answer "busy" while the compositor holds the display
+  local f n err
+  for f in $(files); do
+    for n in 1 2 3 4 5 6; do
+      err="$( { echo "$1" > "$f"; } 2>&1 )" && continue 2
+      sleep 0.4
+    done
+    LAST_ERR="${err#*write error: }"; LAST_ERR="${LAST_ERR##*: }"; return 1
+  done
+}
 
 rule() { # rule <battery-level>
-  local lvl="$1" loop='for f in /sys/class/drm/card*-eDP-*/amdgpu/panel_power_savings; do echo %s > $$f; done'
+  local lvl="$1" loop='for f in /sys/class/drm/card*-eDP-*/amdgpu/panel_power_savings; do for i in 1 2 3 4 5; do echo %s > $$f 2>/dev/null && break; sleep 0.4; done; done'
   cat <<R
 # ai-os-panel: AMD panel power saving ${lvl} on battery, off on AC. Remove with: ai-os-panel uninstall
 SUBSYSTEM=="power_supply", ATTR{type}=="Mains", ATTR{online}=="0", RUN+="/bin/sh -c '$(printf "$loop" "$lvl")'"
@@ -67,13 +77,19 @@ test_levels() {
 
 case "${1:-status}" in
   status) status ;;
-  set) valid "${2:-}" || exit 1; need_root "$@"; setlevel "$2" && echo "level set to $2" ;;
+  set) valid "${2:-}" || exit 1; need_root "$@"
+       if setlevel "$2"; then echo "level set to $2 (now: $(current))"; else echo "could not set level $2: ${LAST_ERR:-unknown error} (still: $(current))" >&2; echo "kernel says: $(journalctl -k -n 40 --no-pager 2>/dev/null | grep -iE 'amdgpu|drm' | tail -2 | cut -c1-160)" >&2; exit 1; fi ;;
   install)
     lvl="${2:-3}"; valid "$lvl" || exit 1; need_root "$@"
     rule "$lvl" > "$RULE" && echo "wrote $RULE" && udevadm control --reload 2>/dev/null
-    if [ "$(ac_online)" = 1 ]; then setlevel 0; else setlevel "$lvl"; fi
-    echo "applied now for current power state (AC $( [ "$(ac_online)" = 1 ] && echo plugged || echo unplugged)); it switches automatically on plug/unplug"
-    echo "note: it is not re-applied at boot until the next AC change; run 'ai-os-panel install' again, or 'ai-os-panel set $lvl', if you boot unplugged" ;;
+    want=$lvl; [ "$(ac_online)" = 1 ] && want=0
+    if setlevel "$want"; then
+      echo "applied now: level $want for the current power state (AC $( [ "$(ac_online)" = 1 ] && echo plugged || echo unplugged )); it switches automatically on plug/unplug"
+    else
+      echo "WARNING: the rule is installed, but writing level $want failed now: ${LAST_ERR:-unknown error} (level is still $(current))." >&2
+      echo "The rule uses the same write, so it may fail the same way. Try 'ai-os-panel set $lvl' while unplugged, then 'ai-os-panel status'." >&2
+    fi
+    echo "note: it is not re-applied at boot until the next AC change; run 'ai-os-panel set $lvl' if you boot unplugged" ;;
   uninstall) need_root "$@"; rm -f "$RULE"; udevadm control --reload 2>/dev/null; setlevel 0; echo "rule removed, level 0" ;;
   test) need_root "$@"; test_levels "${2:-20}" "${3:-3}" ;;
   --print-rule) valid "${2:-3}" && rule "${2:-3}" ;;
