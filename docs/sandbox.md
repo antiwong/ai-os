@@ -27,7 +27,7 @@ Container limits: read-only root filesystem, tmpfs `/tmp` and home, all Linux ca
 - **The login file is mounted read-write** so token refresh works. A hostile agent could read it.
 - **The project is writable.** It can delete or corrupt it. Work in a git worktree (`ai-os-agent`) and commit often; the main checkout stays untouched.
 - **A container is not a VM.** Kernel bugs are out of scope; do not run known-malicious code here.
-- Host MCP servers are not available inside; add what you need to the sandbox config deliberately.
+- Host MCP servers, hooks and plugins are not available inside. The sandbox has its own Claude config (`~/.local/share/ai-os/sandbox/claude/.claude.json`); add an MCP server there only if you accept the agent using it.
 
 ## Notes
 - Sandboxed sessions keep their own history under `~/.local/share/ai-os/sandbox/claude`; delete it to reset.

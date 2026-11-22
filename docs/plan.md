@@ -20,3 +20,6 @@
 - Agents run in git worktrees; risky runs go through `ai-os-sandbox` (rootless podman).
 - Container runtime: rootless podman, `DOCKER_HOST` set in `config/hypr/env.lua`.
 - tmux prefix is Ctrl+Space.
+- Models: local models are parked; a proxy to the user's own servers will be provided later. Voice dictation is deferred.
+- Look and feel only: no dock and no Cmd-style shortcuts (user decision). Chrome is left alone (settings, flags, tabs).
+- Power: `power-saver` on battery via `ai-os-power watch`; measured results are in `docs/ai-os-transformation.md`.

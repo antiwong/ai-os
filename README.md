@@ -1,13 +1,13 @@
 # ai-os
 
 Turning this CachyOS machine (Plasma 6, Wayland) into an Omarchy-style, AI-first workstation:
-Hyprland next to Plasma, keyboard-driven, themed as one system, with agents and local models wired in.
+Hyprland next to Plasma, keyboard-driven, themed as one system, with agents, a sandbox and quick note capture wired in.
 
 Task tracking lives in beads (`bd ready`, `bd list`). Start with `docs/ai-os-transformation.md` (what was built and why).
-Other docs: `plan.md` (decisions), `updates.md` (update + rollback), `sandbox.md` (agent sandbox), `local-models.md` (Ollama).
+Other docs: `plan.md` (decisions), `updates.md` (update + rollback), `sandbox.md` (agent sandbox), `local-models.md` (Ollama, parked), `hotkeys.md` (all keys and gestures).
 
 ## Commands (installed to ~/.local/bin)
-`ai-os-theme` theme switcher (colours, prompt, wallpaper) · `ai-os-wallpaper` wallpaper generator · `ai-os-update` update routine · `ai-os-agent`/`ai-os-agents` worktree agents · `ai-os-sandbox` containerised agent · `ai-os-claude` scratchpad · `ai-os-shot[-agent]` screenshots · `ai-os-dictate` voice typing · `ai-os-mcp` shared MCP servers · `ai-os-note` Obsidian quick capture · `ai-os-menu` system menu · `ai-os-popup` TUI popups
+`ai-os-theme` theme switcher (colours, prompt, wallpaper) · `ai-os-wallpaper` wallpaper generator · `ai-os-update` update routine · `ai-os-power` battery mode and status · `ai-os-agent`/`ai-os-agents` worktree agents · `ai-os-sandbox` containerised agent · `ai-os-claude` scratchpad · `ai-os-shot[-agent]` screenshots · `ai-os-dictate` voice typing · `ai-os-mcp` shared MCP servers · `ai-os-note` Obsidian quick capture · `ai-os-menu` system menu · `ai-os-popup` TUI popups
 
 ## Run order
 1. `scripts/00-bootstrap-beads-dolt.sh`  - dolt + beads

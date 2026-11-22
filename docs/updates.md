@@ -36,7 +36,7 @@ sudo snapper -c root undochange <from>..<to> [paths]
 ```
 Same for `-c home`.
 
-**System won't boot or is badly broken** (full rollback):
+**System won't boot or is badly broken** (full rollback; these steps follow the standard snapper/limine flow and have **not been tried on this machine**):
 1. At the Limine boot menu choose a snapshot entry (limine-snapper-sync lists them), pick the one from before the update, boot it.
 2. If it works, make it permanent: `sudo snapper -c root rollback <number>` (or use btrfs-assistant -> Restore), then reboot.
 3. Fallback: boot the LTS kernel (`linux-cachyos-lts`) from the Limine menu, or a live USB and `arch-chroot`.
