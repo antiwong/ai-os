@@ -21,6 +21,7 @@ LINKS=(
   "config/flags/electron.conf|$C/code-flags.conf"
   "config/systemd/user/ollama.service|$C/systemd/user/ollama.service"
   "config/mise/config.toml|$C/mise/config.toml"
+  "config/applications/ai-os-display.desktop|$HOME/.local/share/applications/ai-os-display.desktop"
   "config/ghostty/config.ghostty|$C/ghostty/config.ghostty"
   "config/ghostty/frame.css|$C/ghostty/frame.css"
   "config/nvim/init.lua|$C/nvim/init.lua"

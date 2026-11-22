@@ -9,7 +9,7 @@ S = [
  ("SUPER+C","Claude Code scratchpad: first press launches, later presses show/hide"),
  ("SUPER+ESCAPE","System menu: screenshot, update, lock, power"),
  ("SUPER+SHIFT+T","Theme switcher (Catppuccin Mocha/Latte, Gruvbox, Tokyo Night)"),
- ("SUPER+SHIFT+M","Displays menu: layout, scale, resolution for external monitors"),
+ ("SUPER+SHIFT+M","Displays menu: layout, scale, resolution. Also: SUPER+SPACE, type \"displays\"; or the system menu"),
  ("SUPER+D","Dictation: press to listen, press again to type what you said"),
  ("SUPER+N","Quick note to Obsidian (Agent/Inbox.md); SUPER+SHIFT+N saves the clipboard"),
  ("SUPER+SHIFT+A","Screenshot a region and send it to the Claude scratchpad"),
