@@ -67,9 +67,10 @@ docs/     plan.md (decisions), updates.md (update + rollback), this file
 - **Agent worktrees** (`agent <branch>` / `ai-os-agent`): one git worktree and one tmux window per agent, so parallel agents never share a working tree. `ai-os-agents` lays out panes. tmux prefix is `Ctrl+Space`.
 - **Neovim**: `claudecode.nvim` (`SPACE a ...`) shares buffers/selections with Claude Code and shows its diffs as nvim diffs.
 - **Review tools**: `lazygit` (`SUPER+G`) and `lazydocker` (`SUPER+SHIFT+D`).
-- **Shared MCP servers** (`config/mcp/servers.json`, applied with `ai-os-mcp claude`): filesystem (scoped to `~/code`), context7 (library docs), playwright. Secrets are never stored in the repo.
+- **Shared MCP servers** (`config/mcp/servers.json`, applied with `ai-os-mcp claude`): filesystem (scoped to `~/code`), context7 (library docs), playwright, obsidian-agent (read/write on the vault's `Agent/` folder only). Secrets are never stored in the repo.
 
 ### AI work layer
+- **Obsidian** (personal vault): `SUPER+N` quick-captures a line to `Agent/Inbox.md` (`SUPER+SHIFT+N` saves the clipboard). Agents get the `obsidian-agent` MCP server, which can read/write only `Agent/` (inbox, `Memory/`, README). Your existing notes, including the `AI` folder, are not exposed. The vault syncs via Obsidian Sync, so captures appear on your other devices.
 - **Models**: local models are parked. Ollama is set up (user service, Vulkan on the Radeon 780M, about 1.3x faster than CPU) but disabled; the plan is a proxy to models on the user's own servers, to be provided later. See `docs/local-models.md`.
 - **Dictation** (`SUPER+D`): `ai-os-dictate` (whisper.cpp `base.en`) exists but voice is **deferred** by the user; pipeline verified on silence only.
 

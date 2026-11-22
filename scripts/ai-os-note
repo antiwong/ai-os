@@ -1,0 +1,19 @@
+#!/bin/sh
+# Quick capture into the Obsidian vault: appends a timestamped line to <vault>/Agent/Inbox.md.
+#   ai-os-note "text"       add a note
+#   ai-os-note              prompt for text (fuzzel)
+#   ai-os-note --clip       add the clipboard contents
+# Vault: $AI_OS_VAULT (default ~/Documents/personal). Only the Agent/ folder is touched.
+set -eu
+vault="${AI_OS_VAULT:-$HOME/Documents/personal}"
+dir="$vault/Agent"; inbox="$dir/Inbox.md"
+[ -d "$vault" ] || { echo "vault not found: $vault" >&2; exit 1; }
+mkdir -p "$dir/Memory"
+[ -f "$inbox" ] || printf '# Inbox\n\nQuick captures (ai-os-note, SUPER+N). Triage into notes or delete.\n\n' > "$inbox"
+if [ "${1:-}" = "--clip" ]; then text="$(wl-paste -n 2>/dev/null | tr '\n' ' ')"
+elif [ $# -gt 0 ]; then text="$*"
+else text="$(printf '' | fuzzel --dmenu --lines 0 --prompt "  note: " 2>/dev/null || true)"; fi
+text="$(printf '%s' "$text" | sed 's/^ *//; s/ *$//')"
+[ -n "$text" ] || exit 0
+printf -- '- %s %s\n' "$(date '+%Y-%m-%d %H:%M')" "$text" >> "$inbox"
+notify-send -t 2000 "Saved to Obsidian" "$text" 2>/dev/null || true
