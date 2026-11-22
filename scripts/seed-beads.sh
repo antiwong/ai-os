@@ -3,6 +3,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 [ -d .beads ] || bd init
+# Not idempotent: refuse to seed twice (a second run duplicated every issue once).
+if [ "$(bd list --all --json 2>/dev/null | jq 'length' 2>/dev/null || echo 0)" -gt 0 ] && [ "${1:-}" != "--force" ]; then
+  echo "beads already has issues; refusing to seed again (use --force to override)" >&2; exit 1
+fi
 
 mk() { # mk <type> <priority> <title> <desc> [parent]
   local args=(create "$3" -t "$1" -p "$2" -d "$4" --json)
