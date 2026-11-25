@@ -11,7 +11,7 @@ ac_online() { for d in $PS/*; do [ "$(cat "$d/type" 2>/dev/null)" = Mains ] && {
 bat() { for d in $PS/BAT*; do [ -d "$d" ] && { echo "$d"; return; }; done; }
 
 # Effects overrides live in ~/.config/ai-os/power.conf, which config/hypr/hyprland.conf sources last,
-# so a reload keeps the current mode. nouveau (no reclocking on older NVIDIA cards) always gets blur off.
+# so a reload keeps the current mode. nouveau (no reclocking on older NVIDIA cards) gets light effects.
 CONF="$HOME/.config/ai-os/power.conf"
 write_conf() { # write_conf battery|ac
   mkdir -p "$(dirname "$CONF")"
@@ -20,7 +20,10 @@ write_conf() { # write_conf battery|ac
     if [ "$1" = battery ]; then
       echo "decoration:blur:enabled = false"; echo "decoration:shadow:enabled = false"; echo "animations:enabled = false"
     elif [ -d /sys/module/nouveau ]; then
-      echo "decoration:blur:enabled = false"
+      # nouveau leaves Kepler and older cards at boot clocks (e.g. 324 MHz core / 648 MHz memory),
+      # so keep only animations: no blur, no shadows, no translucent inactive windows.
+      echo "decoration:blur:enabled = false"; echo "decoration:shadow:enabled = false"
+      echo "decoration:inactive_opacity = 1.0"
     fi
   } > "$CONF.tmp" && mv "$CONF.tmp" "$CONF"
   hyprctl reload >/dev/null 2>&1
