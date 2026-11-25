@@ -1,0 +1,16 @@
+# nouveau leaves Kepler-era NVIDIA cards (e.g. GTX TITAN Black) at boot clocks: 324 MHz core,
+# 648 MHz memory. Switch each nouveau card (dri/<minor>, one entry per card) to its highest performance level (pstate) at boot.
+# Reclocking is experimental in nouveau; to undo, disable this unit and reboot.
+# Installed by scripts/01-install-hyprland.sh when nouveau is the driver in use.
+[Unit]
+Description=Reclock nouveau GPUs to their highest performance level
+After=systemd-udev-settle.service sys-kernel-debug.mount
+Before=display-manager.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c 'for i in $(seq 20); do ls /sys/kernel/debug/dri/?/pstate >/dev/null 2>&1 && break; sleep 0.5; done; for p in /sys/kernel/debug/dri/?/pstate; do [ -w "$p" ] || continue; id=$(grep -oE "^[0-9a-f]{2}:" "$p" | tail -1 | tr -d :); [ -n "$id" ] && echo "$id" > "$p" && echo "$p -> $id"; done'
+
+[Install]
+WantedBy=graphical.target

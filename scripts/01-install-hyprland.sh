@@ -59,4 +59,12 @@ else
   systemctl --user mask waybar.service mako.service
 fi
 
+# nouveau runs older NVIDIA cards at boot clocks; reclock them to full speed at every boot.
+if [ -d /sys/module/nouveau ]; then
+  echo "==> nouveau: installing nouveau-reclock.service"
+  sudo install -m 644 "$(dirname "$0")/../config/systemd/system/nouveau-reclock.service" /etc/systemd/system/
+  sudo systemctl daemon-reload
+  sudo systemctl enable --now nouveau-reclock.service
+fi
+
 echo "==> done. Run scripts/03-verify.sh, then log out and pick 'Hyprland (uwsm-managed)' in the session menu."
