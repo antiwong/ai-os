@@ -54,6 +54,9 @@ if command -v pacman >/dev/null; then
 else
   sudo apt-get update
   sudo apt-get install -y "${PKGS[@]}"
+  # Ubuntu's waybar and mako packages enable user units on graphical-session.target, which uwsm
+  # reaches. Hyprland autostart.conf already execs both, so mask the units to avoid a second bar.
+  systemctl --user mask waybar.service mako.service
 fi
 
 echo "==> done. Run scripts/03-verify.sh, then log out and pick 'Hyprland (uwsm-managed)' in the session menu."

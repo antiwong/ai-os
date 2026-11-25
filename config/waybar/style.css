@@ -4,44 +4,75 @@
 
 * {
   font-family: "Inter", "SF Pro Text", "Noto Sans", "JetBrainsMono Nerd Font", sans-serif;
-  font-size: 13.5px;
+  font-size: 15px;
+  font-weight: 500;
   border: none;
   border-radius: 0;
   min-height: 0;
 }
+
+/* Floating bar: rounding matches Hyprland decoration rounding (look.conf) */
 window#waybar {
-  background: alpha(@mantle, 0.72);
+  background: alpha(@base, 0.82);
   color: @text;
+  border: 1px solid alpha(@surface1, 0.6);
+  border-radius: 12px;
 }
-tooltip { background: @mantle; border: 1px solid @surface1; border-radius: 8px; }
-tooltip label { color: @text; }
+tooltip { background: @mantle; border: 1px solid @surface1; border-radius: 10px; }
+tooltip label { color: @text; padding: 4px; }
 
-/* Workspaces */
-#workspaces { margin: 4px 6px; }
+.modules-left  { margin-left: 6px; }
+.modules-right { margin-right: 6px; }
+
+/* System menu button */
+#custom-menu {
+  font-family: "JetBrainsMono Nerd Font";
+  font-size: 18px;
+  color: @mauve;
+  padding: 0 14px 0 10px;
+}
+#custom-menu:hover { color: @text; }
+
+/* Workspaces: numbered dots, active one stretches into an accent pill */
+#workspaces { margin: 6px 4px; }
 #workspaces button {
-  padding: 0 7px;
-  margin: 0 2px;
+  min-width: 26px;
+  padding: 0 6px;
+  margin: 0 3px;
   color: @subtext;
-  border-radius: 8px;
   background: transparent;
+  border-radius: 9px;
+  transition: all 200ms ease;
 }
-#workspaces button.active { color: @mauve; background: @surface0; }
-#workspaces button.urgent { color: @red; }
-#workspaces button:hover  { background: @surface1; }
+#workspaces button.empty  { color: alpha(@subtext, 0.45); }
+#workspaces button:hover  { background: @surface0; color: @text; box-shadow: none; text-shadow: none; }
+#workspaces button.visible { color: @text; background: @surface0; }
+#workspaces button.active { min-width: 44px; color: @base; background: @mauve; font-weight: 700; }
+#workspaces button.urgent { color: @base; background: @red; }
 
-#clock { font-weight: bold; }
+#window { color: @subtext; padding: 0 12px; }
+window#waybar.empty #window { background: transparent; }
+
+#clock { font-weight: 700; font-size: 15.5px; letter-spacing: 0.3px; }
 
 /* Right-hand status pills */
-#tray, #bluetooth, #network, #pulseaudio, #battery {
-  background: @surface0;
+#tray, #cpu, #memory, #bluetooth, #network, #pulseaudio, #battery {
+  background: alpha(@surface0, 0.8);
   color: @text;
-  border-radius: 10px;
-  padding: 0 12px;
-  margin: 4px 0 4px 8px;
+  border-radius: 9px;
+  padding: 0 13px;
+  margin: 6px 0 6px 8px;
 }
-.modules-right { margin-right: 8px; }
+/* Nerd Font first so glyphs render at full size beside the numbers */
+#cpu, #memory, #bluetooth, #network, #pulseaudio, #battery {
+  font-family: "JetBrainsMono Nerd Font Propo", "Inter", sans-serif;
+  font-size: 14.5px;
+}
 #tray > * { margin: 0 3px; }
+#tray > .needs-attention { background: alpha(@red, 0.3); border-radius: 6px; }
+#cpu, #memory { color: @subtext; }
 #battery.warning  { color: @peach; }
 #battery.critical { color: @red; }
 #battery.charging { color: @mauve; }
 #pulseaudio.muted { color: @subtext; }
+#bluetooth.connected { color: @mauve; }
