@@ -1,6 +1,6 @@
 # ai-os Hotkeys & Shortcuts
 
-Hyprland desktop on CachyOS. **SUPER** = the Windows/Meta key.
+Hyprland desktop (CachyOS laptop, Ubuntu desktop). **SUPER** = the Windows/Meta key.
 Keys come from `config/hypr/binds.lua`, `config/hypr/input.lua` (gestures), `config/tmux/tmux.conf` and `config/nvim/init.lua`. A styled HTML copy is written by `scripts/gen-hotkeys-html.py` to `~/Desktop/ai-os-hotkeys.html`; update both when a key changes.
 
 ## Apps
@@ -49,7 +49,7 @@ Keys come from `config/hypr/binds.lua`, `config/hypr/input.lua` (gestures), `con
 | Keys | Action |
 |---|---|
 | `Print` | Region to clipboard |
-| `SHIFT + Print` | Region, annotate in satty |
+| `SHIFT + Print` | Region, annotate in satty (swappy if satty is missing) |
 | `SUPER + Print` | Whole screen (output) |
 | `SUPER + SHIFT + Print` | Active window |
 

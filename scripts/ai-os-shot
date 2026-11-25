@@ -1,12 +1,30 @@
 #!/bin/sh
 # Usage: ai-os-shot <region|output|window> [annotate]
-# Default: copy to clipboard only. "annotate": open in satty; Enter copies, Ctrl+S saves.
+#        ai-os-shot <region|output|window> --file <path>   (save a PNG, used by ai-os-shot-agent)
+# Default: copy to clipboard only. "annotate": open in satty (or swappy); Enter/copy copies, save writes a file.
+# grim + slurp only (hyprshot is not packaged everywhere).
 mode="${1:-region}"
-if [ "${2:-}" = "annotate" ]; then
-  dir="$HOME/Pictures/Screenshots"; mkdir -p "$dir"
-  hyprshot -m "$mode" --raw --silent | satty --filename - \
-    --output-filename "$dir/Screenshot_%Y%m%d_%H%M%S.png" \
-    --copy-command wl-copy --early-exit --actions-on-enter save-to-clipboard
-else
-  exec hyprshot -m "$mode" --clipboard-only
-fi
+geom() {
+  case "$mode" in
+    region) slurp -d ;;
+    window) hyprctl activewindow -j | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' ;;
+    output) hyprctl monitors -j | jq -r '.[]|select(.focused)|.name' ;;
+    *) echo "usage: ai-os-shot region|output|window [annotate]" >&2; exit 2 ;;
+  esac
+}
+g="$(geom)" || exit 0
+[ -n "$g" ] || exit 0                                    # selection cancelled
+shot() { if [ "$mode" = output ]; then grim -o "$g" "$1"; else grim -g "$g" "$1"; fi; }
+
+case "${2:-}" in
+  --file) shot "$3" ;;
+  annotate)
+    dir="$HOME/Pictures/Screenshots"; mkdir -p "$dir"
+    if command -v satty >/dev/null; then
+      shot - | satty --filename - --output-filename "$dir/Screenshot_%Y%m%d_%H%M%S.png" \
+        --copy-command wl-copy --early-exit --actions-on-enter save-to-clipboard
+    else
+      shot - | swappy -f - -o "$dir/Screenshot_$(date +%Y%m%d_%H%M%S).png"
+    fi ;;
+  *) shot - | wl-copy --type image/png && notify-send -t 1500 "Screenshot copied" 2>/dev/null ;;
+esac

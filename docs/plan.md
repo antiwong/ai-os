@@ -7,7 +7,7 @@
 - beads latest is 1.3.4 (AUR `beads-bin`). `bd` and `dolt` were not installed before this work.
 - `elephant` (Walker 2.x backend) is AUR-only; use `elephant-all-bin` (core + providers). fuzzel is the default launcher.
 
-- Hyprland 0.57 uses a Lua config (`hyprland.lua`), not `hyprland.conf`. Config lives in `config/hypr/` and is symlinked to `~/.config/hypr`.
+- Config is hyprlang (`hyprland.conf` and modules) so it runs on Ubuntu's Hyprland 0.53; it was Lua (`hyprland.lua`) while only the CachyOS laptop (Hyprland 0.57) used it. Config lives in `config/hypr/` and is symlinked to `~/.config/hypr`.
 - `elephant-all-bin` installed (verified).
 
 ## Decisions
@@ -18,7 +18,7 @@
 
 - Dotfiles are plain symlinks (`scripts/05-link-dotfiles.sh`), not chezmoi/stow.
 - Agents run in git worktrees; risky runs go through `ai-os-sandbox` (rootless podman).
-- Container runtime: rootless podman, `DOCKER_HOST` set in `config/hypr/env.lua`.
+- Container runtime: rootless podman, `DOCKER_HOST` set in `config/uwsm/env-hyprland`.
 - tmux prefix is Ctrl+Space.
 - Models: local models are parked; a proxy to the user's own servers will be provided later. Voice dictation is deferred.
 - Look and feel only: no dock and no Cmd-style shortcuts (user decision). Chrome is left alone (settings, flags, tabs).

@@ -38,7 +38,7 @@ render waybar.css    "$GEN/waybar.css"
 render mako          "$GEN/mako"
 render fuzzel.ini    "$GEN/fuzzel.ini"
 render hyprlock.conf "$GEN/hyprlock.conf"
-render hypr.lua      "$GEN/hypr.lua"
+render hypr.conf     "$GEN/hypr.conf"
 render swayosd.css   "$GEN/swayosd.css"
 render ghostty       "$GEN/ghostty"
 render tmux          "$GEN/tmux.conf"
@@ -67,7 +67,7 @@ echo "$theme" > "$GEN/current"
 img="$WALL/$theme.jpg"
 [ -f "$img" ] || "$ROOT/scripts/ai-os-wallpaper" "$img" "${c[mode]}" "${c[base]}" "${c[mantle]}" "${c[crust]}" \
   "${c[accent]}" "${c[accent2]}" "${c[red]}" "${c[peach]}" || echo "wallpaper generation failed" >&2
-cat > "$HOME/.config/hypr/hyprpaper.conf" <<CONF
+cat > "$GEN/hyprpaper.conf" <<CONF
 splash = false
 wallpaper {
     monitor =
@@ -79,16 +79,24 @@ CONF
 # Reload (each step tolerant: apps may not be running).
 makoctl reload 2>/dev/null
 pkill -SIGUSR2 waybar 2>/dev/null
-pkill swayosd-server 2>/dev/null; setsid -f swayosd-server >/dev/null 2>&1
-pkill hyprpaper 2>/dev/null; setsid -f hyprpaper >/dev/null 2>&1
+if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then   # only restart these inside Hyprland, never in GNOME/Plasma
+  pkill swayosd-server 2>/dev/null; setsid -f swayosd-server >/dev/null 2>&1
+  pkill hyprpaper 2>/dev/null; setsid -f hyprpaper -c "$GEN/hyprpaper.conf" >/dev/null 2>&1
+fi
 pkill -SIGUSR2 ghostty 2>/dev/null
 pkill -USR2 btop 2>/dev/null
 tmux source-file ~/.config/tmux/tmux.conf 2>/dev/null
-# GTK + Qt/KDE apps (Dolphin). Qt colour scheme is shared with the Plasma session.
-if [ "${c[mode]}" = light ]; then scheme=default; else scheme=prefer-dark; fi
-gsettings set org.gnome.desktop.interface color-scheme "$scheme" 2>/dev/null
-gsettings set org.gnome.desktop.interface gtk-theme "${c[gtk]}" 2>/dev/null
-plasma-apply-colorscheme "${c[qt]}" >/dev/null 2>&1
+# GTK + Qt/KDE apps (Dolphin). These settings are shared with the other desktop (Plasma colour scheme,
+# GNOME gsettings), so they are only changed from inside Hyprland.
+if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+  if [ "${c[mode]}" = light ]; then scheme=default; else scheme=prefer-dark; fi
+  gsettings set org.gnome.desktop.interface color-scheme "$scheme" 2>/dev/null
+  # Only switch the GTK theme when it is installed (GNOME falls back badly otherwise).
+  for d in "$HOME/.themes" "$HOME/.local/share/themes" /usr/share/themes; do
+    [ -d "$d/${c[gtk]}" ] && { gsettings set org.gnome.desktop.interface gtk-theme "${c[gtk]}" 2>/dev/null; break; }
+  done
+  command -v plasma-apply-colorscheme >/dev/null && plasma-apply-colorscheme "${c[qt]}" >/dev/null 2>&1
+fi
 hyprctl reload >/dev/null 2>&1
 notify-send "Theme" "${c[name]}" 2>/dev/null
 echo "applied: $theme"

@@ -17,10 +17,10 @@ LINKS=(
   "config/swayosd/config.toml|$C/swayosd/config.toml"
   "config/bbl/pretty.awk|$C/bbl/pretty.awk"
   "config/flags/electron.conf|$C/chrome-flags.conf"
-  "config/bbl/pretty.awk|$C/bbl/pretty.awk"
   "config/flags/electron.conf|$C/code-flags.conf"
   "config/systemd/user/ollama.service|$C/systemd/user/ollama.service"
   "config/mise/config.toml|$C/mise/config.toml"
+  "config/uwsm/env-hyprland|$C/uwsm/env-hyprland"
   "config/applications/ai-os-display.desktop|$HOME/.local/share/applications/ai-os-display.desktop"
   "config/ghostty/config.ghostty|$C/ghostty/config.ghostty"
   "config/ghostty/frame.css|$C/ghostty/frame.css"
@@ -46,5 +46,12 @@ for entry in "${LINKS[@]}"; do
   mkdir -p "$(dirname "$dest")"
   if [ -e "$dest" ] || [ -L "$dest" ]; then mv "$dest" "$dest.bak.$(date +%Y%m%d%H%M%S)"; fi
   ln -s "$src" "$dest"; n_new=$((n_new+1))
+done
+# Generated files that Hyprland/hyprlock source. hyprlang treats a missing source file as an error,
+# so seed them empty; ai-os-theme, ai-os-display and ai-os-power fill them in.
+for f in ai-os/power.conf ai-os/monitors.conf ai-os/theme/hypr.conf ai-os/theme/hyprlock.conf; do
+  [ -e "$C/$f" ] && continue
+  echo "seed $C/$f"; [ "$DRY" = 1 ] && continue
+  mkdir -p "$(dirname "$C/$f")"; : > "$C/$f"
 done
 echo "done: $n_ok already linked, $n_new newly linked$([ "$DRY" = 1 ] && echo " (dry run)")"
