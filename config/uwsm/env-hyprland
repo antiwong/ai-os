@@ -1,0 +1,20 @@
+# Sourced (sh) by uwsm before it starts Hyprland. Holds env that needs shell logic,
+# which Hyprland's own `env =` lines cannot express.
+
+# Qt apps follow the desktop colours set by ai-os-theme: the KDE platform theme where Plasma is
+# installed (shares its colour scheme), else the GTK theme (qt5/qt6-gtk-platformtheme).
+if command -v plasmashell >/dev/null 2>&1; then export QT_QPA_PLATFORMTHEME=kde; else export QT_QPA_PLATFORMTHEME=gtk3; fi
+
+# Proprietary NVIDIA driver: the usual Wayland vars. Not set for nouveau or AMD/Intel.
+if [ -e /proc/driver/nvidia/version ]; then
+  export LIBVA_DRIVER_NAME=nvidia
+  export __GLX_VENDOR_LIBRARY_NAME=nvidia
+  export NVD_BACKEND=direct
+fi
+
+# Rootless podman API socket, so docker-API tools (lazydocker, compose) find a runtime.
+# Needs: systemctl --user enable --now podman.socket. Left unset when that socket is absent, so a machine
+# that runs a real docker daemon keeps working.
+_s="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/podman/podman.sock"
+[ -S "$_s" ] && export DOCKER_HOST="unix://$_s"
+unset _s

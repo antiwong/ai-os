@@ -1,22 +1,23 @@
 # ai-os
 
-Setup scripts and configs that make a CachyOS laptop look and work like an AI-centric OS: a keyboard-driven
+Setup scripts and configs that make a CachyOS laptop (or an Ubuntu 26.04 desktop) look and work like an AI-centric OS: a keyboard-driven
 Hyprland desktop (in the spirit of Omarchy) themed as one system, with coding agents, a sandbox and quick
 note capture wired in. Plasma stays installed as the fallback session.
 
 > **This is one person's machine setup, not a general installer.** It targets CachyOS (Arch) on an AMD laptop
-> (Ryzen 7 7840U / Radeon 780M, 1920x1200). Read the scripts before running them, and expect to adapt paths,
+> (Ryzen 7 7840U / Radeon 780M, 1920x1200) and Ubuntu 26.04 on a desktop (Ryzen 5800X, GTX 1080 on the NVIDIA driver,
+> two 4K screens, GNOME as the fallback session; see [docs/ubuntu.md](docs/ubuntu.md)). Read the scripts before running them, and expect to adapt paths,
 > monitors and packages. Nothing here runs `sudo` for you.
 
 ![The four built-in themes (Catppuccin Mocha and Latte, Gruvbox Dark, Tokyo Night): the same terminal and prompt over each theme's generated wallpaper](docs/img/hero.jpg)
 
 ## What you get
 
-- **Desktop**: Hyprland (Lua config), waybar, fuzzel, mako, swayosd, hyprlock/hypridle, hyprpaper, screenshots with annotate, clipboard history, touchpad gestures.
+- **Desktop**: Hyprland (hyprlang `.conf`, Hyprland 0.53+), waybar, fuzzel, mako, swayosd, hyprlock/hypridle, hyprpaper, screenshots with annotate, clipboard history, touchpad gestures.
 - **One theme everywhere** (`ai-os-theme`): Catppuccin Mocha/Latte, Gruvbox, Tokyo Night. Switching recolours the bar, launcher, notifications, terminal, tmux, neovim, btop, lazygit, GTK/Qt, a generated wallpaper and the fish prompt.
 - **Agents**: Claude Code scratchpad on a hotkey, one git worktree + tmux window per agent, a rootless-podman sandbox (`ai-os-sandbox`), neovim integration, shared MCP servers.
 - **Notes**: `SUPER+N` appends to an Obsidian vault folder that agents can read and write (and nothing else in the vault).
-- **Safety**: `ai-os-update` takes snapper snapshots before updating and ends with a health report; [docs/updates.md](docs/updates.md) has the rollback ladder.
+- **Safety**: `ai-os-update` takes snapper snapshots before updating (CachyOS/btrfs) or a timeshift snapshot of the system (Ubuntu/ext4) and ends with a health report; [docs/updates.md](docs/updates.md) has the rollback ladder.
 - **Battery**: `ai-os-power` switches profile and effects when you unplug.
 
 All keys and gestures: [docs/hotkeys.md](docs/hotkeys.md).
@@ -43,6 +44,8 @@ docs/     ai-os-transformation.md (what was built and why), plan.md, updates.md,
 6. `scripts/05-link-dotfiles.sh`, then `ai-os-theme catppuccin-mocha` and `ai-os-mcp claude`
 
 Log out and pick the Hyprland session at the login screen.
+
+On Ubuntu, steps 4 (snapper) and 5 (AUR) do not apply; follow the shorter list in [docs/ubuntu.md](docs/ubuntu.md).
 
 ## Commands (installed to `~/.local/bin`)
 

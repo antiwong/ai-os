@@ -1,35 +1,85 @@
 #!/usr/bin/env bash
-# Step 1: install the Hyprland desktop stack from official/CachyOS repos only.
-# Plasma stays installed; Hyprland shows up as an extra session at the login screen.
+# Step 1: install the Hyprland desktop stack from the distro's official repos only.
+# CachyOS/Arch (pacman) or Ubuntu 26.04+ (apt). The existing desktop (Plasma or GNOME) stays installed;
+# Hyprland shows up as an extra session at the login screen.
 set -euo pipefail
 [ "$EUID" -ne 0 ] || { echo "Run as your user, not root."; exit 1; }
 
-PKGS=(
-  # compositor + session
-  hyprland uwsm hyprland-guiutils
-  xdg-desktop-portal-hyprland xdg-desktop-portal-gtk hyprpolkitagent
-  qt5-wayland qt6-wayland
-  # hypr ecosystem
-  hyprlock hypridle hyprpaper hyprpicker hyprsunset
-  # bar, launcher, notifications, OSD
-  waybar fuzzel mako swayosd
-  # screenshots, clipboard
-  grim slurp hyprshot satty wl-clipboard cliphist wf-recorder
-  # system controls
-  brightnessctl playerctl pamixer wiremix bluetui network-manager-applet
-  # theming, fonts, viewers
-  nwg-look ttf-jetbrains-mono-nerd imv
-)
+if command -v pacman >/dev/null; then
+  PKGS=(
+    # compositor + session
+    hyprland uwsm hyprland-guiutils
+    xdg-desktop-portal-hyprland xdg-desktop-portal-gtk hyprpolkitagent
+    qt5-wayland qt6-wayland
+    # hypr ecosystem
+    hyprlock hypridle hyprpaper hyprpicker hyprsunset
+    # bar, launcher, notifications, OSD
+    waybar fuzzel mako swayosd
+    # screenshots, clipboard
+    grim slurp satty wl-clipboard cliphist wf-recorder
+    # system controls
+    brightnessctl playerctl pamixer wiremix bluetui network-manager-applet
+    # theming, fonts, viewers
+    nwg-look ttf-jetbrains-mono-nerd imv
+    # used by ai-os-* scripts
+    jq socat imagemagick fish tmux wtype libnotify
+  )
+else
+  # Ubuntu 26.04 names. Not packaged there: hyprsunset, satty (swappy is used instead), wiremix, bluetui (blueman is
+  # used instead),
+  # mise, lazydocker, a Nerd Font (install JetBrainsMono Nerd Font into ~/.local/share/fonts).
+  PKGS=(
+    hyprland uwsm hyprland-qtutils
+    xdg-desktop-portal-hyprland xdg-desktop-portal-gtk hyprpolkitagent
+    qtwayland5 qt6-wayland qt5-gtk-platformtheme qt6-gtk-platformtheme
+    hyprlock hypridle hyprpaper hyprpicker
+    waybar fuzzel mako-notifier swayosd
+    grim slurp swappy wl-clipboard cliphist wf-recorder
+    brightnessctl playerctl pamixer pavucontrol network-manager-gnome power-profiles-daemon blueman
+    nwg-look imv
+    jq socat imagemagick fish tmux wtype libnotify-bin lazygit btop
+    podman timeshift
+  )
+fi
 
 # Safety net: snapshot first if snapper is configured (non-fatal if not).
 if command -v snapper >/dev/null && sudo snapper list-configs 2>/dev/null | grep -q root; then
   echo "==> snapper snapshot"
   sudo snapper -c root create -d "pre-hyprland-install"
 else
-  echo "==> snapper not configured for root; skipping snapshot (see bead for snapshot setup)"
+  echo "==> snapper not configured for root; skipping snapshot"
 fi
 
 echo "==> installing ${#PKGS[@]} packages"
-sudo pacman -S --needed "${PKGS[@]}"
+if command -v pacman >/dev/null; then
+  sudo pacman -S --needed "${PKGS[@]}"
+else
+  sudo apt-get update
+  sudo apt-get install -y "${PKGS[@]}"
+  # Ubuntu's waybar and mako packages enable user units on graphical-session.target, which uwsm
+  # reaches. Hyprland autostart.conf already execs both, so mask the units to avoid a second bar.
+  systemctl --user mask waybar.service mako.service
+fi
+
+# No btrfs root means no snapper: ai-os-update takes a timeshift (rsync) snapshot of the system instead.
+# Snapshots go to /timeshift on the root filesystem. /home, logs, the swap file and container storage are left
+# out, so a snapshot holds only the OS (packages and /etc). Scheduled snapshots stay off.
+if command -v timeshift >/dev/null && [ "$(findmnt -no FSTYPE /)" != btrfs ] && [ ! -e /etc/timeshift/timeshift.json ]; then
+  echo "==> timeshift: writing /etc/timeshift/timeshift.json (rsync mode, snapshots on the root filesystem)"
+  jq --arg uuid "$(findmnt -no UUID /)" '.backup_device_uuid=$uuid | .do_first_run="false"
+      | .exclude=["/home/**","/root/**","/var/log/**","/swapfile","/swap.img","/var/lib/docker/**","/var/lib/containers/**","/var/cache/apt/archives/**"]' \
+    /etc/timeshift/default.json | sudo tee /etc/timeshift/timeshift.json >/dev/null
+fi
+
+# Waybar shows no Bluetooth pill and bluetui/blueman find no adapter unless bluetoothd runs.
+sudo systemctl enable --now bluetooth.service
+
+# nouveau runs older NVIDIA cards at boot clocks; reclock them to full speed at every boot.
+if [ -d /sys/module/nouveau ]; then
+  echo "==> nouveau: installing nouveau-reclock.service"
+  sudo install -m 644 "$(dirname "$0")/../config/systemd/system/nouveau-reclock.service" /etc/systemd/system/
+  sudo systemctl daemon-reload
+  sudo systemctl enable --now nouveau-reclock.service
+fi
 
 echo "==> done. Run scripts/03-verify.sh, then log out and pick 'Hyprland (uwsm-managed)' in the session menu."

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ai-os update routine: snapshot -> pacman/AUR -> flatpak -> dotfiles -> health report.
+# ai-os update routine: snapshot -> pacman/AUR (or apt) -> flatpak -> dotfiles -> health report.
 # Usage: ai-os-update [--check] [--nvim] [-y]
 #   --check  only list what is pending (changes nothing)
 #   --nvim   also update neovim plugins (rewrites config/nvim/lazy-lock.json)
@@ -10,37 +10,73 @@ ROOT="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
 check=0; nvim=0; yes=0
 for a in "$@"; do case "$a" in --check) check=1;; --nvim) nvim=1;; -y) yes=1;; *) echo "unknown option: $a" >&2; exit 2;; esac; done
 b=$'\e[1m'; d=$'\e[0m'; hdr() { printf '\n%s==> %s%s\n' "$b" "$1" "$d"; }
+arch=0; command -v pacman >/dev/null && arch=1
 
 hdr "Pending updates"
-repo=$(checkupdates 2>/dev/null); aur=$(paru -Qua 2>/dev/null); fp=$(flatpak remote-ls --updates 2>/dev/null)
+if [ "$arch" = 1 ]; then
+  repo=$(checkupdates 2>/dev/null); aur=$(paru -Qua 2>/dev/null)
+else
+  sudo apt-get update -qq 2>/dev/null || echo "  (apt-get update failed; list may be stale)"
+  repo=$(apt list --upgradable 2>/dev/null | grep -v '^Listing'); aur=""
+fi
+fp=$(command -v flatpak >/dev/null && flatpak remote-ls --updates 2>/dev/null)
 printf 'repo: %s   AUR: %s   flatpak: %s\n' "$(printf '%s' "$repo" | grep -c .)" "$(printf '%s' "$aur" | grep -c .)" "$(printf '%s' "$fp" | grep -c .)"
-printf '%s\n' "$repo" | grep -E '^(linux|nvidia|mesa|systemd|glibc|hyprland|pacman|cachyos)' | sed 's/^/  key: /'
+printf '%s\n' "$repo" | grep -E '^(linux|nvidia|mesa|libgl1-mesa|systemd|glibc|libc6|hyprland|pacman|cachyos)' | sed 's/^/  key: /'
 [ -n "$aur" ] && printf '%s\n' "$aur" | sed 's/^/  AUR: /'
 [ "$check" = 1 ] && exit 0
 if [ "$yes" != 1 ]; then read -rp "Continue? [y/N] " r; [ "$r" = y ] || [ "$r" = Y ] || exit 0; fi
 
 hdr "Snapshots (named rollback points)"
 ts=$(date +%F-%H%M)
-for cfg in root home; do
+if ! command -v snapper >/dev/null; then
+  # ext4 root (Ubuntu desktop): timeshift rsync snapshot of the OS only (/home is not included).
+  # Setup is in scripts/01-install-hyprland.sh. The first snapshot is a full copy; later ones hardlink unchanged files.
+  if ! command -v timeshift >/dev/null || [ ! -e /etc/timeshift/timeshift.json ]; then
+    echo "  no snapper and no timeshift setup: NO rollback point is taken. Back up first if this matters."
+  else
+    need=10; [ -n "$(sudo ls /timeshift/snapshots 2>/dev/null)" ] || need=30
+    free=$(df --output=avail -BG / | tail -1 | tr -dc 0-9)
+    if [ "${free:-0}" -lt "$need" ]; then
+      echo "  WARNING: only ${free}G free on / (need ${need}G): NO rollback point is taken (continuing)"
+    elif sudo timeshift --create --comments "ai-os-update $ts" --tags O --scripted --quiet >/dev/null 2>&1; then
+      echo "  timeshift snapshot taken (system only, not /home)"
+      # keep the 2 newest ai-os-update snapshots
+      sudo timeshift --list --scripted 2>/dev/null | awk '/ai-os-update/ {print $3}' | sort | head -n -2 | while read -r old; do
+        sudo timeshift --delete --snapshot "$old" --scripted >/dev/null 2>&1 && echo "  removed old snapshot $old"
+      done
+    else
+      echo "  WARNING: timeshift snapshot failed (continuing)"
+    fi
+  fi
+else for cfg in root home; do
   n=$(snapper -c "$cfg" create -t single -c number -d "ai-os-update $ts" -p 2>/dev/null) \
     && echo "  $cfg snapshot #$n" || echo "  WARNING: could not snapshot $cfg (continuing)"
-done
+done; fi
 
-hdr "pacman + AUR (paru -Syu)"
-paru -Syu || { echo "paru failed: nothing else was run. See docs/updates.md to roll back." >&2; exit 1; }
+if [ "$arch" = 1 ]; then
+  hdr "pacman + AUR (paru -Syu)"
+  paru -Syu || { echo "paru failed: nothing else was run. See docs/updates.md to roll back." >&2; exit 1; }
+else
+  hdr "apt (full-upgrade)"
+  sudo apt-get full-upgrade || { echo "apt failed: nothing else was run." >&2; exit 1; }
+fi
 
-hdr "Flatpak"
-flatpak update -y
+if command -v flatpak >/dev/null; then hdr "Flatpak"; flatpak update -y; fi
 
 hdr "Dotfiles"
 "$ROOT/scripts/05-link-dotfiles.sh" | tail -1
 if [ "$nvim" = 1 ]; then nvim --headless "+Lazy! update" +qa >/dev/null 2>&1 && echo "neovim plugins updated (review git diff config/nvim/lazy-lock.json)"; fi
 
 hdr "Health report"
-running=$(uname -r); flavour=${running##*-}
-installed=$(ls /usr/lib/modules | grep -- "-$flavour\$" | sort -V | tail -1)
-[ -n "$installed" ] && [ "$running" != "$installed" ] && echo "  REBOOT recommended: running $running, installed $installed"
-pn=$(find /etc -name '*.pacnew' 2>/dev/null); [ -n "$pn" ] && { echo "  .pacnew files to merge (run: sudo pacdiff):"; echo "$pn" | sed 's/^/    /'; }
-orph=$(pacman -Qtdq 2>/dev/null); [ -n "$orph" ] && { echo "  orphans (review, then: sudo pacman -Rns \$(pacman -Qtdq)):"; echo "$orph" | sed 's/^/    /'; }
+if [ "$arch" = 1 ]; then
+  running=$(uname -r); flavour=${running##*-}
+  installed=$(ls /usr/lib/modules | grep -- "-$flavour\$" | sort -V | tail -1)
+  [ -n "$installed" ] && [ "$running" != "$installed" ] && echo "  REBOOT recommended: running $running, installed $installed"
+  pn=$(find /etc -name '*.pacnew' 2>/dev/null); [ -n "$pn" ] && { echo "  .pacnew files to merge (run: sudo pacdiff):"; echo "$pn" | sed 's/^/    /'; }
+  orph=$(pacman -Qtdq 2>/dev/null); [ -n "$orph" ] && { echo "  orphans (review, then: sudo pacman -Rns \$(pacman -Qtdq)):"; echo "$orph" | sed 's/^/    /'; }
+else
+  [ -f /run/reboot-required ] && echo "  REBOOT recommended ($(tr '\n' ' ' < /run/reboot-required.pkgs 2>/dev/null))"
+  orph=$(apt-get -s autoremove 2>/dev/null | awk '/^Remv/{print $2}'); [ -n "$orph" ] && { echo "  unused packages (review, then: sudo apt autoremove):"; echo "$orph" | sed 's/^/    /'; }
+fi
 failed=$(systemctl --failed --no-legend 2>/dev/null); [ -n "$failed" ] && { echo "  failed units:"; echo "$failed" | sed 's/^/    /'; }
 echo "  done."

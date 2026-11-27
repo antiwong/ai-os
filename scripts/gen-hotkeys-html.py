@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Writes ~/Desktop/ai-os-hotkeys.html (Catppuccin-styled; follows light/dark). Edit the tables below when a key changes.
-import html, re
+import html, os, re
 S = [
 ("Apps", [
  ("SUPER+RETURN","Terminal (Ghostty)"),("SUPER+SPACE","App launcher (fuzzel)"),
@@ -17,6 +17,7 @@ S = [
 ("Windows", [
  ("SUPER+W","Close window"),("SUPER+T","Toggle floating"),("SUPER+P","Pseudo-tile"),
  ("SUPER+J","Toggle split direction"),("SUPER+←/→/↑/↓","Move focus"),
+ ("SUPER+SHIFT+←/→/↑/↓","Move window in layout"),("SUPER+CTRL+←/→/↑/↓","Resize window (hold to repeat)"),
  ("SUPER+Left-drag","Move window"),("SUPER+Right-drag","Resize window")]),
 ("Workspaces", [
  ("SUPER+1…0","Go to workspace 1–10"),("SUPER+SHIFT+1…0","Move window to workspace 1–10"),
@@ -90,10 +91,10 @@ footer{{max-width:1200px;margin:0 auto;padding:8px 24px 40px;color:var(--sub);fo
 @media(max-width:520px){{main{{grid-template-columns:1fr;padding:16px}}.row{{grid-template-columns:1fr;gap:4px}}}}
 @media print{{body{{background:#fff;color:#000}}}}
 </style></head><body>
-<header><h1>ai-os Hotkeys</h1><p>Hyprland on CachyOS &middot; <kbd>SUPER</kbd> is the Windows/Meta key</p></header>
+<header><h1>ai-os Hotkeys</h1><p>Hyprland &middot; <kbd>SUPER</kbd> is the Windows/Meta key</p></header>
 <main>
 {cards}<section><h2>Terminal commands</h2>{cmds}</section>
 </main>
-<footer>Source: ~/code/ai-os/config/hypr/binds.lua, config/tmux/tmux.conf, ~/.config/nvim/init.lua</footer>
+<footer>Source: ~/code/ai-os/config/hypr/binds.conf, config/tmux/tmux.conf, ~/.config/nvim/init.lua</footer>
 </body></html>'''
-open('/home/moovita/Desktop/ai-os-hotkeys.html','w').write(page)
+open(os.path.expanduser('~/Desktop/ai-os-hotkeys.html'),'w').write(page)

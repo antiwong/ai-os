@@ -2,7 +2,10 @@
 # Omarchy-style system menu on fuzzel. Bound to SUPER+ESCAPE.
 pick() { printf '%s\n' "$@" | fuzzel --dmenu --prompt "  "; }
 
-case "$(pick "Theme" "Displays" "Screenshot" "Update" "Lock" "Logout" "Suspend" "Reboot" "Shutdown")" in
+# nouveau (older NVIDIA cards on the open driver) can resume from suspend to a black screen: no Suspend entry there.
+suspend="Suspend"; [ -d /sys/module/nouveau ] && suspend=""
+
+case "$(pick "Theme" "Displays" "Screenshot" "Update" "Lock" "Logout" $suspend "Reboot" "Shutdown")" in
   Theme)    exec ai-os-theme ;;
   Displays) exec ai-os-display ;;
   Screenshot)

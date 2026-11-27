@@ -11,6 +11,7 @@ recording() { [ -f "$pidf" ] && kill -0 "$(cat "$pidf")" 2>/dev/null; }
 
 start() {
   recording && return
+  command -v whisper-cli >/dev/null || { note "whisper-cli is not installed (whisper.cpp)"; exit 1; }
   [ -f "$model" ] || { note "model missing: $model"; exit 1; }
   pw-record --rate 16000 --channels 1 --format s16 "$wav" &
   echo $! > "$pidf"; note "Listening..."

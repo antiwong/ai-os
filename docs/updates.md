@@ -45,3 +45,22 @@ Same for `-c home`.
 
 ## Snapshot hygiene
 Timeline snapshots are on (5 hourly / 7 daily / 2 weekly, cleanup timer enabled by `scripts/04-setup-snapper.sh`). Named `ai-os-update` snapshots use the "number" cleanup algorithm and are pruned automatically. List with `snapper -c root list`; delete with `snapper -c root delete <n>`.
+
+## Ubuntu desktop (ext4 root, timeshift)
+
+There is no snapper here. `ai-os-update` takes a timeshift snapshot in rsync mode before `apt full-upgrade`
+(comment "ai-os-update <date>") and keeps the two newest. Setup is done by `scripts/01-install-hyprland.sh`
+(`/etc/timeshift/timeshift.json`, scheduled snapshots off).
+
+- **What a snapshot holds**: the OS (packages, `/etc`, `/usr`, `/opt`, `/var/lib`). Left out: `/home`, `/root`,
+  `/var/log`, the swap file, docker/podman storage. Snapshots live in `/timeshift` on the root disk, so they
+  cover a bad update, not a dead disk.
+- **Space**: the first snapshot is a full copy; later ones hardlink unchanged files. `ai-os-update` skips the
+  snapshot (with a warning) when `/` has less than 10 GB free, or less than 30 GB when no snapshot exists yet.
+- **List / delete**: `sudo timeshift --list`, `sudo timeshift --delete --snapshot <name>`.
+- **One bad package**: `apt list -a <package>`, then `sudo apt install <package>=<old-version>` and
+  `sudo apt-mark hold <package>`.
+- **Roll the system back** (desktop still boots; **not tried on this machine**):
+  `sudo timeshift --restore --snapshot <name>`, then reboot. `/home` is not touched.
+- **System won't boot** (**not tried on this machine**): boot an Ubuntu live USB, install timeshift there, run
+  `sudo timeshift --restore --snapshot-device /dev/nvme0n1p2` and pick the snapshot.

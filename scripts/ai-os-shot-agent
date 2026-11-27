@@ -5,8 +5,7 @@
 mode="${1:-region}"
 dir="$HOME/Pictures/Screenshots/agent"; mkdir -p "$dir"
 file="$dir/agent_$(date +%Y%m%d_%H%M%S).png"
-if [ "$mode" = region ]; then sel="-m region"; else sel="-m active -m $mode"; fi
-hyprshot $sel --raw --silent > "$file" 2>/dev/null
+ai-os-shot "$mode" --file "$file" 2>/dev/null
 [ -s "$file" ] || { rm -f "$file"; exit 0; }   # selection cancelled
 printf '%s' "$file" | wl-copy
 

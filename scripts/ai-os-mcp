@@ -14,7 +14,7 @@ case "${1:-list}" in
     have="$(claude mcp list 2>/dev/null)"
     expanded | jq -c '.mcpServers | to_entries[]' | while read -r e; do
       name="$(printf '%s' "$e" | jq -r .key)"
-      if printf '%s\n' "$have" | grep -q "^$name:"; then echo "skip $name (already configured)"; continue; fi
+      if printf '%s\n' "$have" | grep -Eq "^(plugin:[^:]+:)?$name:"; then echo "skip $name (already configured)"; continue; fi
       printf '%s' "$e" | jq -c '.value + {type:"stdio"}' | xargs -0 -I{} claude mcp add-json --scope user "$name" '{}' >/dev/null \
         && echo "added $name"
     done ;;
