@@ -17,6 +17,7 @@ S = [
 ("Windows", [
  ("SUPER+W","Close window"),("SUPER+T","Toggle floating"),("SUPER+P","Pseudo-tile"),
  ("SUPER+J","Toggle split direction"),("SUPER+←/→/↑/↓","Move focus"),
+ ("SUPER+SHIFT+←/→/↑/↓","Move window in layout"),("SUPER+CTRL+←/→/↑/↓","Resize window (hold to repeat)"),
  ("SUPER+Left-drag","Move window"),("SUPER+Right-drag","Resize window")]),
 ("Workspaces", [
  ("SUPER+1…0","Go to workspace 1–10"),("SUPER+SHIFT+1…0","Move window to workspace 1–10"),

@@ -25,7 +25,8 @@ if command -v pacman >/dev/null; then
     jq socat imagemagick fish tmux wtype libnotify
   )
 else
-  # Ubuntu 26.04 names. Not packaged there: hyprsunset, satty (swappy is used instead), wiremix, bluetui,
+  # Ubuntu 26.04 names. Not packaged there: hyprsunset, satty (swappy is used instead), wiremix, bluetui (blueman is
+  # used instead),
   # mise, lazydocker, a Nerd Font (install JetBrainsMono Nerd Font into ~/.local/share/fonts).
   PKGS=(
     hyprland uwsm hyprland-qtutils
@@ -34,9 +35,10 @@ else
     hyprlock hypridle hyprpaper hyprpicker
     waybar fuzzel mako-notifier swayosd
     grim slurp swappy wl-clipboard cliphist wf-recorder
-    brightnessctl playerctl pamixer pavucontrol network-manager-gnome power-profiles-daemon
+    brightnessctl playerctl pamixer pavucontrol network-manager-gnome power-profiles-daemon blueman
     nwg-look imv
     jq socat imagemagick fish tmux wtype libnotify-bin lazygit btop
+    podman timeshift
   )
 fi
 
@@ -58,6 +60,19 @@ else
   # reaches. Hyprland autostart.conf already execs both, so mask the units to avoid a second bar.
   systemctl --user mask waybar.service mako.service
 fi
+
+# No btrfs root means no snapper: ai-os-update takes a timeshift (rsync) snapshot of the system instead.
+# Snapshots go to /timeshift on the root filesystem. /home, logs, the swap file and container storage are left
+# out, so a snapshot holds only the OS (packages and /etc). Scheduled snapshots stay off.
+if command -v timeshift >/dev/null && [ "$(findmnt -no FSTYPE /)" != btrfs ] && [ ! -e /etc/timeshift/timeshift.json ]; then
+  echo "==> timeshift: writing /etc/timeshift/timeshift.json (rsync mode, snapshots on the root filesystem)"
+  jq --arg uuid "$(findmnt -no UUID /)" '.backup_device_uuid=$uuid | .do_first_run="false"
+      | .exclude=["/home/**","/root/**","/var/log/**","/swapfile","/swap.img","/var/lib/docker/**","/var/lib/containers/**","/var/cache/apt/archives/**"]' \
+    /etc/timeshift/default.json | sudo tee /etc/timeshift/timeshift.json >/dev/null
+fi
+
+# Waybar shows no Bluetooth pill and bluetui/blueman find no adapter unless bluetoothd runs.
+sudo systemctl enable --now bluetooth.service
 
 # nouveau runs older NVIDIA cards at boot clocks; reclock them to full speed at every boot.
 if [ -d /sys/module/nouveau ]; then

@@ -46,7 +46,7 @@
   },
   "tray": { "icon-size": 18, "spacing": 12 },
   "bluetooth": {
-    "on-click": "ai-os-popup bluetui",
+    "on-click": "sh -c 'command -v bluetui >/dev/null && exec ai-os-popup bluetui || exec blueman-manager'",
     "format": "󰂯",
     "format-disabled": "󰂲",
     "format-off": "󰂲",

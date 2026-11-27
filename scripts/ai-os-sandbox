@@ -18,6 +18,9 @@ IMG=localhost/ai-os-sandbox
 ROOT="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
 SB="$HOME/.local/share/ai-os/sandbox/claude"
 
+# podman only: the isolation below (rootless, --userns=keep-id) has no equivalent under a root docker daemon.
+command -v podman >/dev/null || { echo "podman not found: install it (Ubuntu: sudo apt install podman; Arch: sudo pacman -S podman)" >&2; exit 1; }
+
 if [ "${1:-}" = build ]; then
   exec podman build -t "$IMG" -f "$ROOT/config/sandbox/Containerfile" "$ROOT/config/sandbox"
 fi
@@ -51,8 +54,9 @@ case "$common" in ""|"$dir"/*) ;; *) mounts="$mounts -v $common:$common:rw" ;; e
 
 gitenv=""
 n="$(git config user.name 2>/dev/null || true)"; e="$(git config user.email 2>/dev/null || true)"
-[ -n "$n" ] && gitenv="$gitenv -e GIT_AUTHOR_NAME=$n -e GIT_COMMITTER_NAME=$n"
-[ -n "$e" ] && gitenv="$gitenv -e GIT_AUTHOR_EMAIL=$e -e GIT_COMMITTER_EMAIL=$e"
+# Exported and passed by name (-e VAR): a value with a space ("First Last") would split in $gitenv.
+[ -n "$n" ] && { export GIT_AUTHOR_NAME="$n" GIT_COMMITTER_NAME="$n"; gitenv="$gitenv -e GIT_AUTHOR_NAME -e GIT_COMMITTER_NAME"; }
+[ -n "$e" ] && { export GIT_AUTHOR_EMAIL="$e" GIT_COMMITTER_EMAIL="$e"; gitenv="$gitenv -e GIT_AUTHOR_EMAIL -e GIT_COMMITTER_EMAIL"; }
 
 ti=-i; [ -t 0 ] && ti=-it
 # shellcheck disable=SC2086

@@ -16,8 +16,16 @@ STATE="$HOME/.config/ai-os/monitors.json"; GEN="$HOME/.config/ai-os/monitors.con
 mkdir -p "$(dirname "$STATE")"
 if [ "${1:-}" = watch ]; then   # long-running: no lock; each event runs a fresh, locked instance
   sock="${XDG_RUNTIME_DIR:-/tmp}/hypr/${HYPRLAND_INSTANCE_SIGNATURE:?not running under Hyprland}/.socket2.sock"
-  socat -U - "UNIX-CONNECT:$sock" | while IFS= read -r ev; do
-    case "$ev" in monitoradded\>\>*) "$0" hotplug ;; monitorremoved\>\>*) "$0" safety ;; esac
+  # Reconnect for as long as this Hyprland instance lives: the socket may not exist yet at autostart,
+  # and socat can lose the connection. Each (re)connect runs hotplug once to catch events missed meanwhile.
+  while [ -d "${sock%/*}" ]; do
+    if [ -S "$sock" ]; then
+      "$0" hotplug
+      socat -U - "UNIX-CONNECT:$sock" 2>/dev/null | while IFS= read -r ev; do
+        case "$ev" in monitoradded\>\>*) "$0" hotplug ;; monitorremoved\>\>*) "$0" safety ;; esac
+      done
+    fi
+    sleep 2
   done
   exit 0
 fi

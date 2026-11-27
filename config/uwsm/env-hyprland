@@ -13,5 +13,8 @@ if [ -e /proc/driver/nvidia/version ]; then
 fi
 
 # Rootless podman API socket, so docker-API tools (lazydocker, compose) find a runtime.
-# Needs: systemctl --user enable --now podman.socket
-export DOCKER_HOST="unix://${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/podman/podman.sock"
+# Needs: systemctl --user enable --now podman.socket. Left unset when that socket is absent, so a machine
+# that runs a real docker daemon keeps working.
+_s="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/podman/podman.sock"
+[ -S "$_s" ] && export DOCKER_HOST="unix://$_s"
+unset _s

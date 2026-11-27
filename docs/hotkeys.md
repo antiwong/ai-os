@@ -12,7 +12,7 @@ Keys come from `config/hypr/binds.lua`, `config/hypr/input.lua` (gestures), `con
 | `SUPER + F` | File manager (Dolphin) |
 | `SUPER + B` | Browser (Chrome) |
 | `SUPER + G` | lazygit (Ghostty) |
-| `SUPER + SHIFT + D` | lazydocker (Ghostty, uses podman) |
+| `SUPER + SHIFT + D` | lazydocker (Ghostty, uses podman); shows a notification when lazydocker is not installed |
 | `SUPER + C` | Claude Code scratchpad: first press launches, later presses show/hide |
 | `SUPER + ESCAPE` | System menu (screenshot, update, lock, power) |
 | `SUPER + SHIFT + T` | Theme switcher (Catppuccin Mocha/Latte, Gruvbox, Tokyo Night) |
@@ -31,6 +31,8 @@ Keys come from `config/hypr/binds.lua`, `config/hypr/input.lua` (gestures), `con
 | `SUPER + P` | Pseudo-tile |
 | `SUPER + J` | Toggle split direction |
 | `SUPER + Arrow keys` | Move focus left/right/up/down |
+| `SUPER + SHIFT + Arrow keys` | Move the window within the layout |
+| `SUPER + CTRL + Arrow keys` | Resize the window (hold to repeat) |
 | `SUPER + Left-drag` | Move window |
 | `SUPER + Right-drag` | Resize window |
 

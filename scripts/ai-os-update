@@ -29,7 +29,25 @@ if [ "$yes" != 1 ]; then read -rp "Continue? [y/N] " r; [ "$r" = y ] || [ "$r" =
 hdr "Snapshots (named rollback points)"
 ts=$(date +%F-%H%M)
 if ! command -v snapper >/dev/null; then
-  echo "  no snapper here (e.g. ext4 root): NO rollback point is taken. Back up first if this matters."
+  # ext4 root (Ubuntu desktop): timeshift rsync snapshot of the OS only (/home is not included).
+  # Setup is in scripts/01-install-hyprland.sh. The first snapshot is a full copy; later ones hardlink unchanged files.
+  if ! command -v timeshift >/dev/null || [ ! -e /etc/timeshift/timeshift.json ]; then
+    echo "  no snapper and no timeshift setup: NO rollback point is taken. Back up first if this matters."
+  else
+    need=10; [ -n "$(sudo ls /timeshift/snapshots 2>/dev/null)" ] || need=30
+    free=$(df --output=avail -BG / | tail -1 | tr -dc 0-9)
+    if [ "${free:-0}" -lt "$need" ]; then
+      echo "  WARNING: only ${free}G free on / (need ${need}G): NO rollback point is taken (continuing)"
+    elif sudo timeshift --create --comments "ai-os-update $ts" --tags O --scripted --quiet >/dev/null 2>&1; then
+      echo "  timeshift snapshot taken (system only, not /home)"
+      # keep the 2 newest ai-os-update snapshots
+      sudo timeshift --list --scripted 2>/dev/null | awk '/ai-os-update/ {print $3}' | sort | head -n -2 | while read -r old; do
+        sudo timeshift --delete --snapshot "$old" --scripted >/dev/null 2>&1 && echo "  removed old snapshot $old"
+      done
+    else
+      echo "  WARNING: timeshift snapshot failed (continuing)"
+    fi
+  fi
 else for cfg in root home; do
   n=$(snapper -c "$cfg" create -t single -c number -d "ai-os-update $ts" -p 2>/dev/null) \
     && echo "  $cfg snapshot #$n" || echo "  WARNING: could not snapshot $cfg (continuing)"
