@@ -47,3 +47,6 @@ watcher runs and reconnects, the sandbox image builds and runs. `scripts/03-veri
 Monitor removal and return was tested by disabling and re-enabling an output; hyprlock locks, reaches the password
 prompt and unlocks by signal. Not yet verified: a physical cable unplug/replug, typing the password at the lock
 screen, a login through the uwsm-managed session. Suspend/resume has not been tried.
+
+`scripts/06-manual-checks.sh` walks through these hands-on checks (lock screen, suspend/resume, config check, pull
+request), asks before each one and logs the results to `~/.local/state/ai-os/manual-checks.log`.
